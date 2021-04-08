@@ -2,7 +2,7 @@
 #include "atca_basic.h"
 
 
-ATCAIfaceCfg grisp_default_config = {
+ATCAIfaceCfg grisp_atcab_default_config = {
     .iface_type                 = ATCA_I2C_IFACE,
     .devtype                    = ATECC608A,
     {
@@ -15,6 +15,88 @@ ATCAIfaceCfg grisp_default_config = {
 };
 
 
+/*
+ * Device Configuration, shamelessly stolen from Microchip's Trust Platform. This configuration
+ * is supposed to support all our envisioned usecases based on the TrustFLEX configuration, in
+ * particular the following usecases are supported:
+ *
+ *   1. Secure Boot
+ *   2. Custom PKI
+ *   3. Public Key Rotation
+ *
+ * There are way more supported usecases, you can checkout the Trust Platform for explanations.
+ * In the following the supposed usage and purpose of each slot is explained: 
+ *
+ * Slot 0   Primary private key; Primary authentication key; Permanent, Ext Sign, ECDH
+ * Slot 1   Internal sign private key; Private key that can only be used to attest internal keys and
+ *          state of the a device; Can't be used to sign arbitrary messages; Permanent, Int Sign
+ * Slot 2   Secondary private key 1; Secondary private key for other uses; Updatable, Ext Sign, ECDH, Lockable
+ * Slot 3   Secondary private key 2; Secondary private key for other uses; Updatable, Ext Sign, ECDH, Lockable
+ * Slot 4   Secondary private key 3; Secondary private key for other uses; Updatable, Ext Sign, ECDH, Lockable
+ * Slot 5   Secret key; Storage for a secret key; No Read, Encrypted write(6), Lockable, AES key
+ * Slot 6   IO protection key; Key used to protect the I2C bus communication (IO) of certain commands;
+ *          Requires setup before use; No read, Clear write, Lockable
+ * Slot 7   Secure boot digest; Storage location for secureboot digest; This is an internal function, so no
+ *          reads or writes are enabled; No read, No write
+ * Slot 8   General data; General public data storage (416 bytes); Clear read, Always write, Lockable
+ * Slot 9   AES key; Intermediate key storage for ECDH and KDF output; No read, Always write, AES key
+ * Slot 10  Device compressed certificate; Certificate primary public key in the Crypto Authentication
+ *          compressed format; Clear read, No write
+ * Slot 11  Signer public key; Public key for the CA (signer) that signed the device cert; Clear read, No write
+ * Slot 12  Signer compressed certificate; Certificate for the CA (signer) certificate for the device
+ *          certificate in the CryptoAuthentication compressed format; Clear read, No write
+ * Slot 13  Parent public key or general data; Parent public key for validating/invalidating the validated
+ *          public key; Can also be used just as a public key or general data storage (72 bytes);
+ *          Clear read, Always write, Lockable
+ * Slot 14  Validated public key; Validated public key cannot be used (Verify command) or changed without
+ *          authorization via the parent public key; Clear read, Always write, Validated (13)
+ * Slot 15  Secure boot public key; Secure boot public key; Clear read, Always write, Lockable
+ *
+ *
+ * The configuration is written at the very beginning of the provisioning process onto the device. Don't
+ * touch this without informing yourself, be very careful. Unfortunately there are some unknown variables
+ * in the Trust Platform XML description. For the sake of documentation these are: 
+ *
+ *   <UseLock>00</UseLock>
+ *   <VolatileKeyPermission>00</VolatileKeyPermission>
+ *   <SecureBoot Size="2">03 F7</SecureBoot>
+ *   <KdfIvLoc>00</KdfIvLoc>
+ *   <KdfIvStr Size="2">69 76</KdfIvStr>
+ *   <Reserved Address="75" Size="9">00 00 00 00 00 00 00 00 00</Reserved>
+ *   <SlotLocked>FF FF</SlotLocked>
+ *   <ChipOptions Size="2">0E 60</ChipOptions>
+ *
+ * Since we don't have access to the 608A/B documentation (only 508A) we can only make guesses where
+ * these values belong to. Here's the link to the 508A datasheet:
+ *
+ *   https://content.arduino.cc/assets/mkr-microchip_atecc508a_cryptoauthentication_device_summary_datasheet-20005927a.pdf
+ *
+ * And finally, here's the configuration ...
+ */
+static const uint8_t grisp_device_default_config[] = {
+    0x01, 0x23, 0x00, 0x00, 0x00, 0x00, 0x60, 0x01,  // 0   - 7      ignored on write (dummy data)
+    0x00, 0x00, 0x00, 0x00, 0xEE, 0x01, 0x01, 0x00,  // 8   - 15     ignored on write (dummy data)
+    0xC0, 0x00, 0x55, 0x01,                          // 16  - 19     16: I2C address, 18: OTP mode
+    // Start of Slot configuration, two bytes per slot; config taken from Microchip's Trust Platform
+    0x85, 0x00, 0x82, 0x00, 0x85, 0x20, 0x85, 0x20,  // 20  - 27     Slots 0  - 3
+    0x85, 0x20, 0x8F, 0x46, 0x8F, 0x0F, 0x9F, 0x8F,  // 28  - 35     Slots 4  - 7
+    0x0F, 0x0F, 0x8F, 0x0F, 0x0F, 0x8F, 0x0F, 0x8F,  // 36  - 43     Slots 8  - 11
+    0x0F, 0x8F, 0x0F, 0x0F, 0x0D, 0x1F, 0x0F, 0x0F,  // 44  - 51     Slots 12 - 15
+    // End of Slot configuration, next comes more general stuff
+    0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00,  // 52  - 59     Monotonic Counter connected to keys
+    0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00,  // 60  - 67     Monotonic Counter (not connected to keys)
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,  // 68  - 75     128 bits to control limited use for KeyID 15
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,  // 76  - 83     see above and 3.2.6 in the datasheet
+    0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00,  // 84  - 91     Lock bytes (ignored on write) and additional stuff
+    0x00, 0x00, 0x00, 0x00,                          // 92  - 95     X.509 certificate formatting
+    // Slot Key configuration, two bytes per slot; config taken from Microchip's Trust Platform
+    0x53, 0x00, 0x53, 0x00, 0x73, 0x00, 0x73, 0x00,  // 96  - 103    Slots 0  - 3
+    0x73, 0x00, 0x38, 0x00, 0x7C, 0x00, 0x1C, 0x00,  // 104 - 111    Slots 4  - 7
+    0x3C, 0x00, 0x1A, 0x00, 0x1C, 0x00, 0x10, 0x00,  // 112 - 119    Slots 8  - 11
+    0x1C, 0x00, 0x30, 0x00, 0x12, 0x00, 0x30, 0x00,  // 120 - 127    Slots 12 - 15
+};
+
+
 #define EXEC_CA_FUN_STATUS(STATUS, fun, args...) { \
     ATCA_STATUS STATUS = fun(args); \
     if (STATUS != ATCA_SUCCESS) \
@@ -22,7 +104,7 @@ ATCAIfaceCfg grisp_default_config = {
     }
 #define UNIQ_CA_STATUS __func__##__LINE__##_status
 #define EXEC_CA_FUN(fun, args...) EXEC_CA_FUN_STATUS(UNIQ_CA_STATUS, fun, args)
-#define INIT_CA_FUN EXEC_CA_FUN(atcab_init, &grisp_default_config)
+#define INIT_CA_FUN EXEC_CA_FUN(atcab_init, &grisp_atcab_default_config)
 
 
 struct device_type_nif {
