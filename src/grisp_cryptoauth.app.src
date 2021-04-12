@@ -4,7 +4,9 @@
   {registered, []},
   {applications,
    [kernel,
-    stdlib
+    stdlib,
+    crypto,
+    public_key
    ]},
   {env,[]},
   {modules, []},

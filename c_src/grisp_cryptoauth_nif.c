@@ -124,6 +124,12 @@ static ERL_NIF_TERM mk_atom(ErlNifEnv* env, const char* atom)
 }
 
 
+static ERL_NIF_TERM mk_ok(ErlNifEnv* env)
+{
+    return mk_atom(env, "ok");
+}
+
+
 static ERL_NIF_TERM mk_string(ErlNifEnv* env, char* string)
 {
     return enif_make_string(env, string, ERL_NIF_LATIN1);
@@ -151,6 +157,12 @@ static ERL_NIF_TERM mk_success_atom(ErlNifEnv* env, const char* mesg)
 static ERL_NIF_TERM mk_success_string(ErlNifEnv* env, char* mesg)
 {
     return enif_make_tuple2(env, mk_atom(env, "ok"), mk_string(env, mesg));
+}
+
+
+static ERL_NIF_TERM mk_success(ErlNifEnv* env, ERL_NIF_TERM term)
+{
+    return enif_make_tuple2(env, mk_atom(env, "ok"), term);
 }
 
 
@@ -239,12 +251,85 @@ static ERL_NIF_TERM read_config_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 }
 
 
+static ERL_NIF_TERM write_config_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    INIT_CA_FUN;
+
+    EXEC_CA_FUN(atcab_write_config_zone, grisp_device_default_config);
+
+    return mk_ok(env);
+}
+
+
+static ERL_NIF_TERM lock_config_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    INIT_CA_FUN;
+
+    EXEC_CA_FUN(atcab_lock_config_zone);
+
+    return mk_ok(env);
+}
+
+
+static ERL_NIF_TERM lock_data_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    INIT_CA_FUN;
+
+    EXEC_CA_FUN(atcab_lock_data_zone);
+
+    return mk_ok(env);
+}
+
+
+static ERL_NIF_TERM gen_private_key_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    INIT_CA_FUN;
+
+    // TODO: should be configurable
+    uint16_t default_slot = 0;
+
+    uint8_t pubkey[ATCA_PUB_KEY_SIZE];
+    EXEC_CA_FUN(atcab_genkey, default_slot, pubkey);
+
+    ERL_NIF_TERM pubkey_term;
+    char *bin_data = enif_make_new_binary(env, ATCA_PUB_KEY_SIZE, &pubkey_term);
+
+    memcpy(bin_data, pubkey, ATCA_PUB_KEY_SIZE);
+
+    return mk_success(env, pubkey_term);
+}
+
+
+static ERL_NIF_TERM gen_public_key_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    INIT_CA_FUN;
+
+    // TODO: should be configurable
+    uint16_t default_slot = 0;
+
+    uint8_t pubkey[ATCA_PUB_KEY_SIZE];
+    EXEC_CA_FUN(atcab_get_pubkey, default_slot, pubkey);
+
+    ERL_NIF_TERM pubkey_term;
+    char *bin_data = enif_make_new_binary(env, ATCA_PUB_KEY_SIZE, &pubkey_term);
+
+    memcpy(bin_data, pubkey, ATCA_PUB_KEY_SIZE);
+
+    return mk_success(env, pubkey_term);
+}
+
+
 static ErlNifFunc nif_funcs[] = {
     {"device_info",     0, device_info_nif},
     {"config_locked",   0, config_locked_nif},
     {"data_locked",     0, data_locked_nif},
     {"serial_number",   0, serial_number_nif},
     {"read_config",     0, read_config_nif},
+    {"write_config",    0, write_config_nif},
+    {"lock_config",     0, lock_config_nif},
+    {"lock_data",       0, lock_data_nif},
+    {"gen_private_key", 0, gen_private_key_nif},
+    {"gen_public_key",  0, gen_public_key_nif},
 };
 
 ERL_NIF_INIT(grisp_cryptoauth, nif_funcs, NULL, NULL, NULL, NULL);

@@ -4,7 +4,12 @@
          config_locked/0,
          data_locked/0,
          serial_number/0,
-         read_config/0]).
+         read_config/0,
+         write_config/0,
+         lock_config/0,
+         lock_data/0,
+         gen_private_key/0,
+         gen_public_key/0]).
 
 -on_load(init/0).
 
@@ -12,11 +17,16 @@
 -define(nif_stub, nif_stub_error(?LINE)).
 
 
-device_info() ->    ?nif_stub.
-config_locked() ->  ?nif_stub.
-data_locked() ->    ?nif_stub.
-serial_number() ->  ?nif_stub.
-read_config() ->    ?nif_stub.
+device_info() ->      ?nif_stub.
+config_locked() ->    ?nif_stub.
+data_locked() ->      ?nif_stub.
+serial_number() ->    ?nif_stub.
+read_config() ->      ?nif_stub.
+write_config() ->     ?nif_stub.
+lock_config() ->      ?nif_stub.
+lock_data() ->        ?nif_stub.
+gen_private_key() ->  ?nif_stub.
+gen_public_key() ->   ?nif_stub.
 
 init() ->
     SoName = case code:priv_dir(?APPNAME) of
