@@ -4,9 +4,10 @@
 
 ATCAIfaceCfg grisp_atcab_default_config = {
     .iface_type                 = ATCA_I2C_IFACE,
-    .devtype                    = ATECC608A,
+    .devtype                    = ATECC608B,
     {
-        .atcai2c.address        = 0xC0,
+//        .atcai2c.address        = 0xC0,
+        .atcai2c.address        = 0x6C,
         .atcai2c.bus            = 1,
         .atcai2c.baud           = 100000,
     },
@@ -224,6 +225,23 @@ static ERL_NIF_TERM data_locked_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 }
 
 
+static ERL_NIF_TERM slot_locked_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    INIT_CA_FUN;
+
+    int slot_idx;
+    bool is_locked = false;
+
+    if (!enif_get_int(env, argv[0], &slot_idx)) {
+	    return enif_make_badarg(env);
+    }
+
+    EXEC_CA_FUN(atcab_is_slot_locked, (uint16_t) slot_idx, &is_locked);
+
+    return mk_success_atom(env, is_locked ? "true" : "false");
+}
+
+
 static ERL_NIF_TERM serial_number_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
     INIT_CA_FUN;
@@ -280,6 +298,20 @@ static ERL_NIF_TERM lock_data_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM a
     return mk_ok(env);
 }
 
+static ERL_NIF_TERM lock_slot_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    INIT_CA_FUN;
+
+    int slot_idx;
+
+    if (!enif_get_int(env, argv[0], &slot_idx)) {
+	    return enif_make_badarg(env);
+    }
+
+    EXEC_CA_FUN(atcab_lock_data_slot, (uint16_t) slot_idx);
+
+    return mk_ok(env);
+}
 
 static ERL_NIF_TERM gen_private_key_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
@@ -323,11 +355,13 @@ static ErlNifFunc nif_funcs[] = {
     {"device_info",     0, device_info_nif},
     {"config_locked",   0, config_locked_nif},
     {"data_locked",     0, data_locked_nif},
+    {"slot_locked",     1, slot_locked_nif},
     {"serial_number",   0, serial_number_nif},
     {"read_config",     0, read_config_nif},
     {"write_config",    0, write_config_nif},
     {"lock_config",     0, lock_config_nif},
     {"lock_data",       0, lock_data_nif},
+    {"lock_slot",       1, lock_slot_nif},
     {"gen_private_key", 0, gen_private_key_nif},
     {"gen_public_key",  0, gen_public_key_nif},
 };
