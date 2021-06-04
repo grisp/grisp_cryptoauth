@@ -6,7 +6,10 @@ ATCAIfaceCfg grisp_atcab_default_config = {
     .iface_type                 = ATCA_I2C_IFACE,
     .devtype                    = ATECC608B,
     {
-//        .atcai2c.address        = 0xC0,
+        /*
+         * ATECC608B-TFLXTLSS default address;
+         * unconfigured chips usually have 0xCO
+         */
         .atcai2c.address        = 0x6C,
         .atcai2c.bus            = 1,
         .atcai2c.baud           = 100000,
@@ -17,16 +20,13 @@ ATCAIfaceCfg grisp_atcab_default_config = {
 
 
 /*
- * Device Configuration, shamelessly stolen from Microchip's Trust Platform. This configuration
+ * Device Configuration, shamelessly stolen from Microchip's ATECC608B-TFLXTLSS. This configuration
  * is supposed to support all our envisioned usecases based on the TrustFLEX configuration, in
- * particular the following usecases are supported:
- *
- *   1. Secure Boot
- *   2. Custom PKI
- *   3. Public Key Rotation
+ * particular a custom Public Key Infrastructure (PKI) is supported.
  *
  * There are way more supported usecases, you can checkout the Trust Platform for explanations.
  * In the following the supposed usage and purpose of each slot is explained: 
+ *
  *
  * Slot 0   Primary private key; Primary authentication key; Permanent, Ext Sign, ECDH
  * Slot 1   Internal sign private key; Private key that can only be used to attest internal keys and
@@ -54,47 +54,30 @@ ATCAIfaceCfg grisp_atcab_default_config = {
  * Slot 15  Secure boot public key; Secure boot public key; Clear read, Always write, Lockable
  *
  *
- * The configuration is written at the very beginning of the provisioning process onto the device. Don't
- * touch this without informing yourself, be very careful. Unfortunately there are some unknown variables
- * in the Trust Platform XML description. For the sake of documentation these are: 
- *
- *   <UseLock>00</UseLock>
- *   <VolatileKeyPermission>00</VolatileKeyPermission>
- *   <SecureBoot Size="2">03 F7</SecureBoot>
- *   <KdfIvLoc>00</KdfIvLoc>
- *   <KdfIvStr Size="2">69 76</KdfIvStr>
- *   <Reserved Address="75" Size="9">00 00 00 00 00 00 00 00 00</Reserved>
- *   <SlotLocked>FF FF</SlotLocked>
- *   <ChipOptions Size="2">0E 60</ChipOptions>
- *
- * Since we don't have access to the 608A/B documentation (only 508A) we can only make guesses where
- * these values belong to. Here's the link to the 508A datasheet:
- *
- *   https://content.arduino.cc/assets/mkr-microchip_atecc508a_cryptoauthentication_device_summary_datasheet-20005927a.pdf
- *
- * And finally, here's the configuration ...
+ * The following configuration can be written at the very beginning of the provisioning process onto an
+ * unconfigured device. Don't touch this without informing yourself, be very careful.
  */
 static const uint8_t grisp_device_default_config[] = {
     0x01, 0x23, 0x00, 0x00, 0x00, 0x00, 0x60, 0x01,  // 0   - 7      ignored on write (dummy data)
     0x00, 0x00, 0x00, 0x00, 0xEE, 0x01, 0x01, 0x00,  // 8   - 15     ignored on write (dummy data)
-    0xC0, 0x00, 0x55, 0x01,                          // 16  - 19     16: I2C address, 18: OTP mode
-    // Start of Slot configuration, two bytes per slot; config taken from Microchip's Trust Platform
+    0x6C, 0x00, 0x00, 0x01,                          // 16  - 19     16: I2C address; 19: ChipMode
+    // Start of Slot configuration, two bytes per slot
     0x85, 0x00, 0x82, 0x00, 0x85, 0x20, 0x85, 0x20,  // 20  - 27     Slots 0  - 3
     0x85, 0x20, 0x8F, 0x46, 0x8F, 0x0F, 0x9F, 0x8F,  // 28  - 35     Slots 4  - 7
-    0x0F, 0x0F, 0x8F, 0x0F, 0x0F, 0x8F, 0x0F, 0x8F,  // 36  - 43     Slots 8  - 11
-    0x0F, 0x8F, 0x0F, 0x0F, 0x0D, 0x1F, 0x0F, 0x0F,  // 44  - 51     Slots 12 - 15
+    0x0F, 0x0F, 0x8F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F,  // 36  - 43     Slots 8  - 11
+    0x0F, 0x0F, 0x0F, 0x0F, 0x0D, 0x1F, 0x0F, 0x0F,  // 44  - 51     Slots 12 - 15
     // End of Slot configuration, next comes more general stuff
     0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00,  // 52  - 59     Monotonic Counter connected to keys
     0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00,  // 60  - 67     Monotonic Counter (not connected to keys)
-    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,  // 68  - 75     128 bits to control limited use for KeyID 15
-    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,  // 76  - 83     see above and 3.2.6 in the datasheet
-    0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00,  // 84  - 91     Lock bytes (ignored on write) and additional stuff
+    0x00, 0x00, 0x03, 0xF7, 0x00, 0x69, 0x76, 0x00,  // 68  - 75     UseLock, VolatileKey, SecureBoot, KDF
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // 76  - 83     unknown
+    0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x0E, 0x60,  // 84  - 91     85: UserExtraAdd; Lock Bytes
     0x00, 0x00, 0x00, 0x00,                          // 92  - 95     X.509 certificate formatting
-    // Slot Key configuration, two bytes per slot; config taken from Microchip's Trust Platform
+    // Slot Key configuration, two bytes per slot
     0x53, 0x00, 0x53, 0x00, 0x73, 0x00, 0x73, 0x00,  // 96  - 103    Slots 0  - 3
     0x73, 0x00, 0x38, 0x00, 0x7C, 0x00, 0x1C, 0x00,  // 104 - 111    Slots 4  - 7
-    0x3C, 0x00, 0x1A, 0x00, 0x1C, 0x00, 0x10, 0x00,  // 112 - 119    Slots 8  - 11
-    0x1C, 0x00, 0x30, 0x00, 0x12, 0x00, 0x30, 0x00,  // 120 - 127    Slots 12 - 15
+    0x3C, 0x00, 0x1A, 0x00, 0x3C, 0x00, 0x30, 0x00,  // 112 - 119    Slots 8  - 11
+    0x3C, 0x00, 0x30, 0x00, 0x12, 0x00, 0x30, 0x00,  // 120 - 127    Slots 12 - 15
 };
 
 
