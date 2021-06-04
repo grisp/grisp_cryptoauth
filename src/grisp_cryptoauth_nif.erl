@@ -1,17 +1,17 @@
 -module(grisp_cryptoauth_nif).
 
--export([device_info/0,
-         config_locked/0,
-         data_locked/0,
-         slot_locked/1,
-         serial_number/0,
-         read_config/0,
-         write_config/0,
-         lock_config/0,
-         lock_data/0,
-         lock_slot/1,
-         gen_private_key/0,
-         gen_public_key/0]).
+-export([device_info/1,
+         config_locked/1,
+         data_locked/1,
+         slot_locked/2,
+         serial_number/1,
+         read_config/1,
+         write_config/1,
+         lock_config/1,
+         lock_data/1,
+         lock_slot/2,
+         gen_private_key/1,
+         gen_public_key/1]).
 
 -on_load(init/0).
 
@@ -19,18 +19,18 @@
 -define(nif_stub, nif_stub_error(?LINE)).
 
 
-device_info() ->      ?nif_stub.
-config_locked() ->    ?nif_stub.
-data_locked() ->      ?nif_stub.
-slot_locked(_) ->     ?nif_stub.
-serial_number() ->    ?nif_stub.
-read_config() ->      ?nif_stub.
-write_config() ->     ?nif_stub.
-lock_config() ->      ?nif_stub.
-lock_data() ->        ?nif_stub.
-lock_slot(_) ->       ?nif_stub.
-gen_private_key() ->  ?nif_stub.
-gen_public_key() ->   ?nif_stub.
+device_info(_) ->       ?nif_stub.
+config_locked(_) ->     ?nif_stub.
+data_locked(_) ->       ?nif_stub.
+slot_locked(_,_) ->     ?nif_stub.
+serial_number(_) ->     ?nif_stub.
+read_config(_) ->       ?nif_stub.
+write_config(_) ->      ?nif_stub.
+lock_config(_) ->       ?nif_stub.
+lock_data(_) ->         ?nif_stub.
+lock_slot(_,_) ->       ?nif_stub.
+gen_private_key(_) ->   ?nif_stub.
+gen_public_key(_) ->    ?nif_stub.
 
 init() ->
     SoName = case code:priv_dir(?APPNAME) of

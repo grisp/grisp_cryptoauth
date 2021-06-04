@@ -215,7 +215,7 @@ static ERL_NIF_TERM slot_locked_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM
     int slot_idx;
     bool is_locked = false;
 
-    if (!enif_get_int(env, argv[0], &slot_idx)) {
+    if (!enif_get_int(env, argv[1], &slot_idx)) {
 	    return enif_make_badarg(env);
     }
 
@@ -287,7 +287,7 @@ static ERL_NIF_TERM lock_slot_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM a
 
     int slot_idx;
 
-    if (!enif_get_int(env, argv[0], &slot_idx)) {
+    if (!enif_get_int(env, argv[1], &slot_idx)) {
 	    return enif_make_badarg(env);
     }
 
@@ -335,18 +335,18 @@ static ERL_NIF_TERM gen_public_key_nif(ErlNifEnv* env, int argc, const ERL_NIF_T
 
 
 static ErlNifFunc nif_funcs[] = {
-    {"device_info",     0, device_info_nif},
-    {"config_locked",   0, config_locked_nif},
-    {"data_locked",     0, data_locked_nif},
-    {"slot_locked",     1, slot_locked_nif},
-    {"serial_number",   0, serial_number_nif},
-    {"read_config",     0, read_config_nif},
-    {"write_config",    0, write_config_nif},
-    {"lock_config",     0, lock_config_nif},
-    {"lock_data",       0, lock_data_nif},
-    {"lock_slot",       1, lock_slot_nif},
-    {"gen_private_key", 0, gen_private_key_nif},
-    {"gen_public_key",  0, gen_public_key_nif},
+    {"device_info",     1, device_info_nif},
+    {"config_locked",   1, config_locked_nif},
+    {"data_locked",     1, data_locked_nif},
+    {"slot_locked",     2, slot_locked_nif},
+    {"serial_number",   1, serial_number_nif},
+    {"read_config",     1, read_config_nif},
+    {"write_config",    1, write_config_nif},
+    {"lock_config",     1, lock_config_nif},
+    {"lock_data",       1, lock_data_nif},
+    {"lock_slot",       2, lock_slot_nif},
+    {"gen_private_key", 1, gen_private_key_nif},
+    {"gen_public_key",  1, gen_public_key_nif},
 };
 
 ERL_NIF_INIT(grisp_cryptoauth, nif_funcs, NULL, NULL, NULL, NULL);
