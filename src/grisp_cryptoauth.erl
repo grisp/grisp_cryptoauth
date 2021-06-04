@@ -13,38 +13,39 @@
          gen_private_key/0,
          gen_public_key/0]).
 
--on_load(init/0).
 
--define(APPNAME, grisp_cryptoauth).
--define(nif_stub, nif_stub_error(?LINE)).
+device_info() ->
+    grisp_cryptoauth_nif:device_info().
 
+config_locked() ->
+    grisp_cryptoauth_nif:config_locked().
 
-device_info() ->      ?nif_stub.
-config_locked() ->    ?nif_stub.
-data_locked() ->      ?nif_stub.
-slot_locked(_) ->     ?nif_stub.
-serial_number() ->    ?nif_stub.
-read_config() ->      ?nif_stub.
-write_config() ->     ?nif_stub.
-lock_config() ->      ?nif_stub.
-lock_data() ->        ?nif_stub.
-lock_slot(_) ->       ?nif_stub.
-gen_private_key() ->  ?nif_stub.
-gen_public_key() ->   ?nif_stub.
+data_locked() ->
+    grisp_cryptoauth_nif:data_locked().
 
-init() ->
-    SoName = case code:priv_dir(?APPNAME) of
-        {error, bad_name} ->
-            case filelib:is_dir(filename:join(["..", priv])) of
-                true ->
-                    filename:join(["..", priv, ?APPNAME]);
-                _ ->
-                    filename:join([priv, ?APPNAME])
-            end;
-        Dir ->
-            filename:join(Dir, ?APPNAME)
-    end,
-    erlang:load_nif(SoName, 0).
+slot_locked(SlotIdx) ->
+    grisp_cryptoauth_nif:slot_locked(SlotIdx).
 
-nif_stub_error(Line) ->
-    erlang:nif_error({nif_not_loaded, module, ?MODULE, line, Line}).
+serial_number() ->
+    grisp_cryptoauth_nif:serial_number().
+
+read_config() ->
+    grisp_cryptoauth_nif:read_config().
+
+write_config() ->
+    grisp_cryptoauth_nif:write_config().
+
+lock_config() ->
+    grisp_cryptoauth_nif:lock_config().
+
+lock_data() ->
+    grisp_cryptoauth_nif:lock_data().
+
+lock_slot(SlotIdx) ->
+    grisp_cryptoauth_nif:lock_slot(SlotIdx).
+
+gen_private_key() ->
+    grisp_cryptoauth_nif:gen_private_key().
+
+gen_public_key() ->
+    grisp_cryptoauth_nif:gen_public_key().
