@@ -81,6 +81,10 @@ static const uint8_t grisp_device_default_config[] = {
 };
 
 
+#define CONFIG_DEVICE_TYPE_KEY "type"
+#define CONFIG_I2C_BUS_KEY "i2c_bus"
+#define CONFIG_I2C_ADDRESS_KEY "i2c_address"
+
 #define EXEC_CA_FUN_STATUS(STATUS, fun, args...) { \
     ATCA_STATUS STATUS = fun(args); \
     if (STATUS != ATCA_SUCCESS) \
@@ -88,7 +92,11 @@ static const uint8_t grisp_device_default_config[] = {
     }
 #define UNIQ_CA_STATUS __func__##__LINE__##_status
 #define EXEC_CA_FUN(fun, args...) EXEC_CA_FUN_STATUS(UNIQ_CA_STATUS, fun, args)
-#define INIT_CA_FUN EXEC_CA_FUN(atcab_init, &grisp_atcab_default_config)
+#define INIT_CA_FUN { \
+    ATCAIfaceCfg ATCAB_CONFIG = grisp_atcab_default_config; \
+    build_atcab_config(env, &ATCAB_CONFIG, argv[0]); \
+    EXEC_CA_FUN(atcab_init, &ATCAB_CONFIG) \
+    }
 
 
 struct device_type_nif {
@@ -161,14 +169,43 @@ static void bytes_to_hex(uint8_t *bytes, int len, char *hex)
 }
 
 
+static void build_atcab_config(ErlNifEnv* env, ATCAIfaceCfg *atcab_config, ERL_NIF_TERM config_map)
+{
+    int i2c_bus, i2c_address;
+    bool device_type_present, i2c_bus_present, i2c_address_present;
+    ERL_NIF_TERM device_type_value, i2c_bus_value, i2c_address_value;
+
+    ERL_NIF_TERM device_type_key = mk_atom(env, CONFIG_DEVICE_TYPE_KEY);
+    ERL_NIF_TERM i2c_bus_key = mk_atom(env, CONFIG_I2C_BUS_KEY);
+    ERL_NIF_TERM i2c_address_key = mk_atom(env, CONFIG_I2C_ADDRESS_KEY);
+
+    device_type_present = enif_get_map_value(env, config_map, device_type_key, &device_type_value);
+    i2c_bus_present = enif_get_map_value(env, config_map, i2c_bus_key, &i2c_bus_value);
+    i2c_address_present = enif_get_map_value(env, config_map, i2c_address_key, &i2c_address_value);
+
+    if (i2c_bus_present)
+        enif_get_int(env, i2c_bus_value, &i2c_bus);
+        atcab_config->atcai2c.bus = (uint16_t) i2c_bus;
+    if (i2c_address_present)
+        enif_get_int(env, i2c_address_value, &i2c_address);
+        atcab_config->atcai2c.address = (uint16_t) i2c_address;
+    if (device_type_present) {
+        if (enif_compare(mk_atom(env, "ATECC508A"), device_type_value))
+            atcab_config->devtype = ATECC508A;
+        if (enif_compare(mk_atom(env, "ATECC608A"), device_type_value))
+            atcab_config->devtype = ATECC608A;
+        if (enif_compare(mk_atom(env, "ATECC608B"), device_type_value))
+            atcab_config->devtype = ATECC608B;
+    }
+}
+
+
 static ERL_NIF_TERM device_info_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
     INIT_CA_FUN;
 
     const struct device_type_nif types[] =
-    { { ATSHA204A, "ATSHA204A" },
-      { ATECC108A, "ATECC108A" },
-      { ATECC508A, "ATECC508A" },
+    { { ATECC508A, "ATECC508A" },
       { ATECC608A, "ATECC608A" },
       { ATECC608B, "ATECC608B" } };
 
