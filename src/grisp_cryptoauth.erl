@@ -12,8 +12,8 @@
          lock_config/0,
          lock_data/0,
          lock_slot/1,
-         gen_private_key/0,
-         gen_public_key/0]).
+         gen_private_key/1,
+         gen_public_key/1]).
 
 %% Convenience wrappers,
 %% using custom config
@@ -27,8 +27,8 @@
          lock_config/1,
          lock_data/1,
          lock_slot/2,
-         gen_private_key/1,
-         gen_public_key/1]).
+         gen_private_key/2,
+         gen_public_key/2]).
 
 -define(APP, grisp_cryptoauth).
 
@@ -136,14 +136,14 @@ lock_slot(SlotIdx) when SlotIdx >= 0, SlotIdx =< 15 ->
 lock_slot(Config, SlotIdx) when SlotIdx >= 0, SlotIdx =< 15 ->
     grisp_cryptoauth_nif:lock_slot(build_config(Config), SlotIdx).
 
-gen_private_key() ->
-    grisp_cryptoauth_nif:gen_private_key(default_config()).
+gen_private_key(SlotIdx) when SlotIdx >= 0, SlotIdx =< 15 ->
+    grisp_cryptoauth_nif:gen_private_key(default_config(), SlotIdx).
 
-gen_private_key(Config) ->
-    grisp_cryptoauth_nif:gen_private_key(build_config(Config)).
+gen_private_key(Config, SlotIdx) when SlotIdx >= 0, SlotIdx =< 15 ->
+    grisp_cryptoauth_nif:gen_private_key(build_config(Config), SlotIdx).
 
-gen_public_key() ->
-    grisp_cryptoauth_nif:gen_public_key(default_config()).
+gen_public_key(SlotIdx) when SlotIdx >= 0, SlotIdx =< 15 ->
+    grisp_cryptoauth_nif:gen_public_key(default_config(), SlotIdx).
 
-gen_public_key(Config) ->
-    grisp_cryptoauth_nif:gen_public_key(build_config(Config)).
+gen_public_key(Config, SlotIdx) when SlotIdx >= 0, SlotIdx =< 15 ->
+    grisp_cryptoauth_nif:gen_public_key(build_config(Config), SlotIdx).

@@ -337,11 +337,14 @@ static ERL_NIF_TERM gen_private_key_nif(ErlNifEnv* env, int argc, const ERL_NIF_
 {
     INIT_CA_FUN;
 
-    // TODO: should be configurable
-    uint16_t default_slot = 0;
+    int slot_idx;
+
+    if (!enif_get_int(env, argv[1], &slot_idx)) {
+	    return enif_make_badarg(env);
+    }
 
     uint8_t pubkey[ATCA_PUB_KEY_SIZE];
-    EXEC_CA_FUN(atcab_genkey, default_slot, pubkey);
+    EXEC_CA_FUN(atcab_genkey, (uint16_t) slot_idx, pubkey);
 
     ERL_NIF_TERM pubkey_term;
     char *bin_data = enif_make_new_binary(env, ATCA_PUB_KEY_SIZE, &pubkey_term);
@@ -356,11 +359,14 @@ static ERL_NIF_TERM gen_public_key_nif(ErlNifEnv* env, int argc, const ERL_NIF_T
 {
     INIT_CA_FUN;
 
-    // TODO: should be configurable
-    uint16_t default_slot = 0;
+    int slot_idx;
+
+    if (!enif_get_int(env, argv[1], &slot_idx)) {
+	    return enif_make_badarg(env);
+    }
 
     uint8_t pubkey[ATCA_PUB_KEY_SIZE];
-    EXEC_CA_FUN(atcab_get_pubkey, default_slot, pubkey);
+    EXEC_CA_FUN(atcab_get_pubkey, (uint16_t) slot_idx, pubkey);
 
     ERL_NIF_TERM pubkey_term;
     char *bin_data = enif_make_new_binary(env, ATCA_PUB_KEY_SIZE, &pubkey_term);
@@ -382,8 +388,8 @@ static ErlNifFunc nif_funcs[] = {
     {"lock_config",     1, lock_config_nif},
     {"lock_data",       1, lock_data_nif},
     {"lock_slot",       2, lock_slot_nif},
-    {"gen_private_key", 1, gen_private_key_nif},
-    {"gen_public_key",  1, gen_public_key_nif},
+    {"gen_private_key", 2, gen_private_key_nif},
+    {"gen_public_key",  2, gen_public_key_nif},
 };
 
 ERL_NIF_INIT(grisp_cryptoauth, nif_funcs, NULL, NULL, NULL, NULL);

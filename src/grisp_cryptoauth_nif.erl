@@ -10,8 +10,8 @@
          lock_config/1,
          lock_data/1,
          lock_slot/2,
-         gen_private_key/1,
-         gen_public_key/1]).
+         gen_private_key/2,
+         gen_public_key/2]).
 
 -on_load(init/0).
 
@@ -29,8 +29,8 @@ write_config(_) ->      ?nif_stub.
 lock_config(_) ->       ?nif_stub.
 lock_data(_) ->         ?nif_stub.
 lock_slot(_,_) ->       ?nif_stub.
-gen_private_key(_) ->   ?nif_stub.
-gen_public_key(_) ->    ?nif_stub.
+gen_private_key(_,_) -> ?nif_stub.
+gen_public_key(_,_) ->  ?nif_stub.
 
 init() ->
     SoName = case code:priv_dir(?APPNAME) of
