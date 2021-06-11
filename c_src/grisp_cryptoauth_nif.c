@@ -183,12 +183,14 @@ static void build_atcab_config(ErlNifEnv* env, ATCAIfaceCfg *atcab_config, ERL_N
     i2c_bus_present = enif_get_map_value(env, config_map, i2c_bus_key, &i2c_bus_value);
     i2c_address_present = enif_get_map_value(env, config_map, i2c_address_key, &i2c_address_value);
 
-    if (i2c_bus_present)
+    if (i2c_bus_present) {
         enif_get_int(env, i2c_bus_value, &i2c_bus);
         atcab_config->atcai2c.bus = (uint16_t) i2c_bus;
-    if (i2c_address_present)
+    }
+    if (i2c_address_present) {
         enif_get_int(env, i2c_address_value, &i2c_address);
         atcab_config->atcai2c.address = (uint16_t) i2c_address;
+    }
     if (device_type_present) {
         if (enif_compare(mk_atom(env, "ATECC508A"), device_type_value))
             atcab_config->devtype = ATECC508A;
