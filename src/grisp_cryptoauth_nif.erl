@@ -11,7 +11,10 @@
          lock_data/1,
          lock_slot/2,
          gen_private_key/2,
-         gen_public_key/2]).
+         gen_public_key/2,
+         sign/3,
+         verify_extern/4,
+         verify_stored/4]).
 
 -on_load(init/0).
 
@@ -19,18 +22,21 @@
 -define(nif_stub, nif_stub_error(?LINE)).
 
 
-device_info(_) ->       ?nif_stub.
-config_locked(_) ->     ?nif_stub.
-data_locked(_) ->       ?nif_stub.
-slot_locked(_,_) ->     ?nif_stub.
-serial_number(_) ->     ?nif_stub.
-read_config(_) ->       ?nif_stub.
-write_config(_) ->      ?nif_stub.
-lock_config(_) ->       ?nif_stub.
-lock_data(_) ->         ?nif_stub.
-lock_slot(_,_) ->       ?nif_stub.
-gen_private_key(_,_) -> ?nif_stub.
-gen_public_key(_,_) ->  ?nif_stub.
+device_info(_) ->           ?nif_stub.
+config_locked(_) ->         ?nif_stub.
+data_locked(_) ->           ?nif_stub.
+slot_locked(_,_) ->         ?nif_stub.
+serial_number(_) ->         ?nif_stub.
+read_config(_) ->           ?nif_stub.
+write_config(_) ->          ?nif_stub.
+lock_config(_) ->           ?nif_stub.
+lock_data(_) ->             ?nif_stub.
+lock_slot(_,_) ->           ?nif_stub.
+gen_private_key(_,_) ->     ?nif_stub.
+gen_public_key(_,_) ->      ?nif_stub.
+sign(_,_,_) ->              ?nif_stub.
+verify_extern(_,_,_,_) ->   ?nif_stub.
+verify_stored(_,_,_,_) ->   ?nif_stub.
 
 init() ->
     SoName = case code:priv_dir(?APPNAME) of

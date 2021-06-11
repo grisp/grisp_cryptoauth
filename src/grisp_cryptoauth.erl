@@ -13,7 +13,10 @@
          lock_data/0,
          lock_slot/1,
          gen_private_key/1,
-         gen_public_key/1]).
+         gen_public_key/1,
+         sign/2,
+         verify_extern/3,
+         verify_stored/3]).
 
 %% Convenience wrappers,
 %% using custom config
@@ -28,7 +31,10 @@
          lock_data/1,
          lock_slot/2,
          gen_private_key/2,
-         gen_public_key/2]).
+         gen_public_key/2,
+         sign/3,
+         verify_extern/4,
+         verify_stored/4]).
 
 -define(APP, grisp_cryptoauth).
 
@@ -147,3 +153,21 @@ gen_public_key(SlotIdx) when SlotIdx >= 0, SlotIdx =< 15 ->
 
 gen_public_key(Config, SlotIdx) when SlotIdx >= 0, SlotIdx =< 15 ->
     grisp_cryptoauth_nif:gen_public_key(build_config(Config), SlotIdx).
+
+sign(SlotIdx, Msg) when SlotIdx >= 0, SlotIdx =< 15 ->
+    grisp_cryptoauth_nif:sign(default_config(), SlotIdx, Msg).
+
+sign(Config, SlotIdx, Msg) when SlotIdx >= 0, SlotIdx =< 15 ->
+    grisp_cryptoauth_nif:sign(build_config(Config), SlotIdx, Msg).
+
+verify_extern(PubKey, Msg, Sig) ->
+    grisp_cryptoauth_nif:verify_extern(default_config(), PubKey, Msg, Sig).
+
+verify_extern(Config, PubKey, Msg, Sig) ->
+    grisp_cryptoauth_nif:verify_extern(build_config(Config), PubKey, Msg, Sig).
+
+verify_stored(SlotIdx, Msg, Sig) ->
+    grisp_cryptoauth_nif:verify_stored(default_config(), SlotIdx, Msg, Sig).
+
+verify_stored(Config, SlotIdx, Msg, Sig) ->
+    grisp_cryptoauth_nif:verify_stored(build_config(Config), SlotIdx, Msg, Sig).

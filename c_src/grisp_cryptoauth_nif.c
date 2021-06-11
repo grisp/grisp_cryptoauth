@@ -377,6 +377,87 @@ static ERL_NIF_TERM gen_public_key_nif(ErlNifEnv* env, int argc, const ERL_NIF_T
 }
 
 
+static ERL_NIF_TERM sign_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    INIT_CA_FUN;
+
+    int slot_idx;
+    ErlNifBinary bin_msg;
+
+    if (!enif_get_int(env, argv[1], &slot_idx)) {
+	    return enif_make_badarg(env);
+    }
+
+    if (!enif_inspect_binary(env, argv[2], &bin_msg) || (bin_msg.size != ATCA_SHA256_DIGEST_SIZE)) {
+        return enif_make_badarg(env);
+    }
+
+    uint8_t sig[ATCA_ECCP256_SIG_SIZE];
+    EXEC_CA_FUN(atcab_sign, (uint16_t) slot_idx, (uint8_t *) bin_msg.data, sig);
+
+    ERL_NIF_TERM sig_term;
+    char *bin_data = enif_make_new_binary(env, ATCA_ECCP256_SIG_SIZE, &sig_term);
+
+    memcpy(bin_data, sig, ATCA_ECCP256_SIG_SIZE);
+
+    return mk_success(env, sig_term);
+}
+
+
+static ERL_NIF_TERM verify_extern_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    INIT_CA_FUN;
+
+    ErlNifBinary bin_pubkey;
+    ErlNifBinary bin_msg;
+    ErlNifBinary bin_sig;
+
+    if (!enif_inspect_binary(env, argv[1], &bin_pubkey) || (bin_msg.size != ATCA_ECCP256_PUBKEY_SIZE)) {
+        return enif_make_badarg(env);
+    }
+
+    if (!enif_inspect_binary(env, argv[2], &bin_msg) || (bin_msg.size != ATCA_SHA256_DIGEST_SIZE)) {
+        return enif_make_badarg(env);
+    }
+
+    if (!enif_inspect_binary(env, argv[3], &bin_sig) || (bin_msg.size != ATCA_ECCP256_SIG_SIZE)) {
+        return enif_make_badarg(env);
+    }
+
+    bool is_verified;
+    EXEC_CA_FUN(atcab_verify_extern, (uint8_t *) bin_msg.data, (uint8_t *) bin_sig.data, (uint8_t *) bin_pubkey.data, &is_verified);
+
+    return mk_success_atom(env, is_verified ? "true" : "false");
+}
+
+
+static ERL_NIF_TERM verify_stored_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    INIT_CA_FUN;
+
+    int slot_idx;
+    ErlNifBinary bin_msg;
+    ErlNifBinary bin_sig;
+
+    if (!enif_get_int(env, argv[1], &slot_idx)) {
+	    return enif_make_badarg(env);
+    }
+
+    if (!enif_inspect_binary(env, argv[2], &bin_msg) || (bin_msg.size != ATCA_SHA256_DIGEST_SIZE)) {
+        return enif_make_badarg(env);
+    }
+
+    if (!enif_inspect_binary(env, argv[3], &bin_sig) || (bin_msg.size != ATCA_ECCP256_SIG_SIZE)) {
+        return enif_make_badarg(env);
+    }
+
+    bool is_verified;
+    EXEC_CA_FUN(atcab_verify_stored, (uint8_t *) bin_msg.data, (uint8_t *) bin_sig.data, (uint16_t) slot_idx, &is_verified);
+
+    return mk_success_atom(env, is_verified ? "true" : "false");
+}
+
+
 static ErlNifFunc nif_funcs[] = {
     {"device_info",     1, device_info_nif},
     {"config_locked",   1, config_locked_nif},
@@ -390,6 +471,9 @@ static ErlNifFunc nif_funcs[] = {
     {"lock_slot",       2, lock_slot_nif},
     {"gen_private_key", 2, gen_private_key_nif},
     {"gen_public_key",  2, gen_public_key_nif},
+    {"sign",            3, sign_nif},
+    {"verify_extern",   4, verify_extern_nif},
+    {"verify_stored",   4, verify_stored_nif},
 };
 
 ERL_NIF_INIT(grisp_cryptoauth, nif_funcs, NULL, NULL, NULL, NULL);
