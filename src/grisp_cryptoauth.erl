@@ -100,10 +100,10 @@ data_locked() ->
 data_locked(Config) ->
     grisp_cryptoauth_nif:data_locked(build_config(Config)).
 
-slot_locked(SlotIdx) when SlotIdx >= 0, SlotIdx =< 15 ->
+slot_locked(SlotIdx) ->
     grisp_cryptoauth_nif:slot_locked(default_config(), SlotIdx).
 
-slot_locked(Config, SlotIdx) when SlotIdx >= 0, SlotIdx =< 15 ->
+slot_locked(Config, SlotIdx) ->
     grisp_cryptoauth_nif:slot_locked(build_config(Config), SlotIdx).
 
 serial_number() ->
@@ -136,28 +136,28 @@ lock_data() ->
 lock_data(Config) ->
     grisp_cryptoauth_nif:lock_data(build_config(Config)).
 
-lock_slot(SlotIdx) when SlotIdx >= 0, SlotIdx =< 15 ->
+lock_slot(SlotIdx) ->
     grisp_cryptoauth_nif:lock_slot(default_config(), SlotIdx).
 
-lock_slot(Config, SlotIdx) when SlotIdx >= 0, SlotIdx =< 15 ->
+lock_slot(Config, SlotIdx) ->
     grisp_cryptoauth_nif:lock_slot(build_config(Config), SlotIdx).
 
-gen_private_key(SlotIdx) when SlotIdx >= 0, SlotIdx =< 15 ->
+gen_private_key(SlotIdx) ->
     grisp_cryptoauth_nif:gen_private_key(default_config(), SlotIdx).
 
-gen_private_key(Config, SlotIdx) when SlotIdx >= 0, SlotIdx =< 15 ->
+gen_private_key(Config, SlotIdx) ->
     grisp_cryptoauth_nif:gen_private_key(build_config(Config), SlotIdx).
 
-gen_public_key(SlotIdx) when SlotIdx >= 0, SlotIdx =< 15 ->
+gen_public_key(SlotIdx) ->
     grisp_cryptoauth_nif:gen_public_key(default_config(), SlotIdx).
 
-gen_public_key(Config, SlotIdx) when SlotIdx >= 0, SlotIdx =< 15 ->
+gen_public_key(Config, SlotIdx) ->
     grisp_cryptoauth_nif:gen_public_key(build_config(Config), SlotIdx).
 
-sign(SlotIdx, Msg) when SlotIdx >= 0, SlotIdx =< 15 ->
+sign(SlotIdx, Msg) ->
     grisp_cryptoauth_nif:sign(default_config(), SlotIdx, Msg).
 
-sign(Config, SlotIdx, Msg) when SlotIdx >= 0, SlotIdx =< 15 ->
+sign(Config, SlotIdx, Msg) ->
     grisp_cryptoauth_nif:sign(build_config(Config), SlotIdx, Msg).
 
 verify_extern(PubKey, Msg, Sig) ->

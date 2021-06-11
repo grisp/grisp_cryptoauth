@@ -254,9 +254,8 @@ static ERL_NIF_TERM slot_locked_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM
     int slot_idx;
     bool is_locked = false;
 
-    if (!enif_get_int(env, argv[1], &slot_idx)) {
+    if (!enif_get_int(env, argv[1], &slot_idx))
 	    return enif_make_badarg(env);
-    }
 
     EXEC_CA_FUN(atcab_is_slot_locked, (uint16_t) slot_idx, &is_locked);
 
@@ -326,9 +325,8 @@ static ERL_NIF_TERM lock_slot_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM a
 
     int slot_idx;
 
-    if (!enif_get_int(env, argv[1], &slot_idx)) {
+    if (!enif_get_int(env, argv[1], &slot_idx))
 	    return enif_make_badarg(env);
-    }
 
     EXEC_CA_FUN(atcab_lock_data_slot, (uint16_t) slot_idx);
 
@@ -341,9 +339,8 @@ static ERL_NIF_TERM gen_private_key_nif(ErlNifEnv* env, int argc, const ERL_NIF_
 
     int slot_idx;
 
-    if (!enif_get_int(env, argv[1], &slot_idx)) {
+    if (!enif_get_int(env, argv[1], &slot_idx))
 	    return enif_make_badarg(env);
-    }
 
     uint8_t pubkey[ATCA_ECCP256_PUBKEY_SIZE];
     EXEC_CA_FUN(atcab_genkey, (uint16_t) slot_idx, pubkey);
@@ -363,9 +360,8 @@ static ERL_NIF_TERM gen_public_key_nif(ErlNifEnv* env, int argc, const ERL_NIF_T
 
     int slot_idx;
 
-    if (!enif_get_int(env, argv[1], &slot_idx)) {
+    if (!enif_get_int(env, argv[1], &slot_idx))
 	    return enif_make_badarg(env);
-    }
 
     uint8_t pubkey[ATCA_ECCP256_PUBKEY_SIZE];
     EXEC_CA_FUN(atcab_get_pubkey, (uint16_t) slot_idx, pubkey);
@@ -386,13 +382,11 @@ static ERL_NIF_TERM sign_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]
     int slot_idx;
     ErlNifBinary bin_msg;
 
-    if (!enif_get_int(env, argv[1], &slot_idx)) {
+    if (!enif_get_int(env, argv[1], &slot_idx))
 	    return enif_make_badarg(env);
-    }
 
-    if (!enif_inspect_binary(env, argv[2], &bin_msg) || (bin_msg.size != ATCA_SHA256_DIGEST_SIZE)) {
+    if (!enif_inspect_binary(env, argv[2], &bin_msg) || (bin_msg.size != ATCA_SHA256_DIGEST_SIZE))
         return enif_make_badarg(env);
-    }
 
     uint8_t sig[ATCA_ECCP256_SIG_SIZE];
     EXEC_CA_FUN(atcab_sign, (uint16_t) slot_idx, (uint8_t *) bin_msg.data, sig);
@@ -414,17 +408,14 @@ static ERL_NIF_TERM verify_extern_nif(ErlNifEnv* env, int argc, const ERL_NIF_TE
     ErlNifBinary bin_msg;
     ErlNifBinary bin_sig;
 
-    if (!enif_inspect_binary(env, argv[1], &bin_pubkey) || (bin_msg.size != ATCA_ECCP256_PUBKEY_SIZE)) {
+    if (!enif_inspect_binary(env, argv[1], &bin_pubkey) || (bin_msg.size != ATCA_ECCP256_PUBKEY_SIZE))
         return enif_make_badarg(env);
-    }
 
-    if (!enif_inspect_binary(env, argv[2], &bin_msg) || (bin_msg.size != ATCA_SHA256_DIGEST_SIZE)) {
+    if (!enif_inspect_binary(env, argv[2], &bin_msg) || (bin_msg.size != ATCA_SHA256_DIGEST_SIZE))
         return enif_make_badarg(env);
-    }
 
-    if (!enif_inspect_binary(env, argv[3], &bin_sig) || (bin_msg.size != ATCA_ECCP256_SIG_SIZE)) {
+    if (!enif_inspect_binary(env, argv[3], &bin_sig) || (bin_msg.size != ATCA_ECCP256_SIG_SIZE))
         return enif_make_badarg(env);
-    }
 
     bool is_verified;
     EXEC_CA_FUN(atcab_verify_extern, (uint8_t *) bin_msg.data, (uint8_t *) bin_sig.data, (uint8_t *) bin_pubkey.data, &is_verified);
@@ -441,17 +432,14 @@ static ERL_NIF_TERM verify_stored_nif(ErlNifEnv* env, int argc, const ERL_NIF_TE
     ErlNifBinary bin_msg;
     ErlNifBinary bin_sig;
 
-    if (!enif_get_int(env, argv[1], &slot_idx)) {
+    if (!enif_get_int(env, argv[1], &slot_idx))
 	    return enif_make_badarg(env);
-    }
 
-    if (!enif_inspect_binary(env, argv[2], &bin_msg) || (bin_msg.size != ATCA_SHA256_DIGEST_SIZE)) {
+    if (!enif_inspect_binary(env, argv[2], &bin_msg) || (bin_msg.size != ATCA_SHA256_DIGEST_SIZE))
         return enif_make_badarg(env);
-    }
 
-    if (!enif_inspect_binary(env, argv[3], &bin_sig) || (bin_msg.size != ATCA_ECCP256_SIG_SIZE)) {
+    if (!enif_inspect_binary(env, argv[3], &bin_sig) || (bin_msg.size != ATCA_ECCP256_SIG_SIZE))
         return enif_make_badarg(env);
-    }
 
     bool is_verified;
     EXEC_CA_FUN(atcab_verify_stored, (uint8_t *) bin_msg.data, (uint8_t *) bin_sig.data, (uint16_t) slot_idx, &is_verified);
