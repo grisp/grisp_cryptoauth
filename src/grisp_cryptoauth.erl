@@ -57,22 +57,13 @@ validate_config(Config) ->
     lists:member(maps:get(type, Config, ?DEFAULT_DEVICE), ?VALID_DEVICES).
 
 default_config() ->
-    case application:get_env(?APP, device) of
-        undefined ->
-            ?DEFAULT_CONFIG;
-        {ok, Config} ->
-            case validate_config(Config) of
-                true ->
-                    maps:merge(?DEFAULT_CONFIG, Config);
-                false ->
-                    exit({badarg, invalid_config})
-            end
-    end.
+    maps:merge(?DEFAULT_CONFIG, application:get_env(?APP, device, #{})).
 
 build_config(Config) ->
-    case validate_config(Config) of
+    MergedConfig = maps:merge(default_config(), Config),
+    case validate_config(MergedConfig) of
         true ->
-            maps:merge(default_config(), Config);
+            MergedConfig;
         false ->
             exit({badarg, invalid_config})
     end.
@@ -83,91 +74,91 @@ build_config(Config) ->
 %% --------------------
 
 device_info() ->
-    grisp_cryptoauth_nif:device_info(default_config()).
+    device_info(default_config()).
 
 device_info(Config) ->
     grisp_cryptoauth_nif:device_info(build_config(Config)).
 
 config_locked() ->
-    grisp_cryptoauth_nif:config_locked(default_config()).
+    config_locked(default_config()).
 
 config_locked(Config) ->
     grisp_cryptoauth_nif:config_locked(build_config(Config)).
 
 data_locked() ->
-    grisp_cryptoauth_nif:data_locked(default_config()).
+    data_locked(default_config()).
 
 data_locked(Config) ->
     grisp_cryptoauth_nif:data_locked(build_config(Config)).
 
 slot_locked(SlotIdx) ->
-    grisp_cryptoauth_nif:slot_locked(default_config(), SlotIdx).
+    slot_locked(default_config(), SlotIdx).
 
 slot_locked(Config, SlotIdx) ->
     grisp_cryptoauth_nif:slot_locked(build_config(Config), SlotIdx).
 
 serial_number() ->
-    grisp_cryptoauth_nif:serial_number(default_config()).
+    serial_number(default_config()).
 
 serial_number(Config) ->
     grisp_cryptoauth_nif:serial_number(build_config(Config)).
 
 read_config() ->
-    grisp_cryptoauth_nif:read_config(default_config()).
+    read_config(default_config()).
 
 read_config(Config) ->
     grisp_cryptoauth_nif:read_config(build_config(Config)).
 
 write_config() ->
-    grisp_cryptoauth_nif:write_config(default_config()).
+    write_config(default_config()).
 
 write_config(Config) ->
     grisp_cryptoauth_nif:write_config(build_config(Config)).
 
 lock_config() ->
-    grisp_cryptoauth_nif:lock_config(default_config()).
+    lock_config(default_config()).
 
 lock_config(Config) ->
     grisp_cryptoauth_nif:lock_config(build_config(Config)).
 
 lock_data() ->
-    grisp_cryptoauth_nif:lock_data(default_config()).
+    lock_data(default_config()).
 
 lock_data(Config) ->
     grisp_cryptoauth_nif:lock_data(build_config(Config)).
 
 lock_slot(SlotIdx) ->
-    grisp_cryptoauth_nif:lock_slot(default_config(), SlotIdx).
+    lock_slot(default_config(), SlotIdx).
 
 lock_slot(Config, SlotIdx) ->
     grisp_cryptoauth_nif:lock_slot(build_config(Config), SlotIdx).
 
 gen_private_key(SlotIdx) ->
-    grisp_cryptoauth_nif:gen_private_key(default_config(), SlotIdx).
+    gen_private_key(default_config(), SlotIdx).
 
 gen_private_key(Config, SlotIdx) ->
     grisp_cryptoauth_nif:gen_private_key(build_config(Config), SlotIdx).
 
 gen_public_key(SlotIdx) ->
-    grisp_cryptoauth_nif:gen_public_key(default_config(), SlotIdx).
+    gen_public_key(default_config(), SlotIdx).
 
 gen_public_key(Config, SlotIdx) ->
     grisp_cryptoauth_nif:gen_public_key(build_config(Config), SlotIdx).
 
 sign(SlotIdx, Msg) ->
-    grisp_cryptoauth_nif:sign(default_config(), SlotIdx, Msg).
+    sign(default_config(), SlotIdx, Msg).
 
 sign(Config, SlotIdx, Msg) ->
     grisp_cryptoauth_nif:sign(build_config(Config), SlotIdx, Msg).
 
 verify_extern(PubKey, Msg, Sig) ->
-    grisp_cryptoauth_nif:verify_extern(default_config(), PubKey, Msg, Sig).
+    verify_extern(default_config(), PubKey, Msg, Sig).
 
 verify_extern(Config, PubKey, Msg, Sig) ->
     grisp_cryptoauth_nif:verify_extern(build_config(Config), PubKey, Msg, Sig).
 
 verify_stored(SlotIdx, Msg, Sig) ->
-    grisp_cryptoauth_nif:verify_stored(default_config(), SlotIdx, Msg, Sig).
+    verify_stored(default_config(), SlotIdx, Msg, Sig).
 
 verify_stored(Config, SlotIdx, Msg, Sig) ->
     grisp_cryptoauth_nif:verify_stored(build_config(Config), SlotIdx, Msg, Sig).
