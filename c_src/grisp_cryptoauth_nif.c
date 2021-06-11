@@ -343,13 +343,13 @@ static ERL_NIF_TERM gen_private_key_nif(ErlNifEnv* env, int argc, const ERL_NIF_
 	    return enif_make_badarg(env);
     }
 
-    uint8_t pubkey[ATCA_PUB_KEY_SIZE];
+    uint8_t pubkey[ATCA_ECCP256_PUBKEY_SIZE];
     EXEC_CA_FUN(atcab_genkey, (uint16_t) slot_idx, pubkey);
 
     ERL_NIF_TERM pubkey_term;
-    char *bin_data = enif_make_new_binary(env, ATCA_PUB_KEY_SIZE, &pubkey_term);
+    char *bin_data = enif_make_new_binary(env, ATCA_ECCP256_PUBKEY_SIZE, &pubkey_term);
 
-    memcpy(bin_data, pubkey, ATCA_PUB_KEY_SIZE);
+    memcpy(bin_data, pubkey, ATCA_ECCP256_PUBKEY_SIZE);
 
     return mk_success(env, pubkey_term);
 }
@@ -365,13 +365,13 @@ static ERL_NIF_TERM gen_public_key_nif(ErlNifEnv* env, int argc, const ERL_NIF_T
 	    return enif_make_badarg(env);
     }
 
-    uint8_t pubkey[ATCA_PUB_KEY_SIZE];
+    uint8_t pubkey[ATCA_ECCP256_PUBKEY_SIZE];
     EXEC_CA_FUN(atcab_get_pubkey, (uint16_t) slot_idx, pubkey);
 
     ERL_NIF_TERM pubkey_term;
-    char *bin_data = enif_make_new_binary(env, ATCA_PUB_KEY_SIZE, &pubkey_term);
+    char *bin_data = enif_make_new_binary(env, ATCA_ECCP256_PUBKEY_SIZE, &pubkey_term);
 
-    memcpy(bin_data, pubkey, ATCA_PUB_KEY_SIZE);
+    memcpy(bin_data, pubkey, ATCA_ECCP256_PUBKEY_SIZE);
 
     return mk_success(env, pubkey_term);
 }
