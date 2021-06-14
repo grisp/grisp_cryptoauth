@@ -169,8 +169,10 @@ do_refresh(SlotIdx, Config) ->
 
 do_setup(Config) ->
     grisp_cryptoauth_nif:write_config(Config),
+    grisp_cryptoauth_nif:lock_config(Config),
     PrivKeys = [?PRIMARY_PRIVATE_KEY, ?SECONDARY_PRIVATE_KEY_1, ?SECONDARY_PRIVATE_KEY_2, ?SECONDARY_PRIVATE_KEY_3],
     [grisp_cryptoauth_nif:gen_private_key(Config, SlotIdx) || SlotIdx <- PrivKeys],
+    grisp_cryptoauth_nif:lock_data(Config),
     ok.
 
 generate_device_info(Config) ->
