@@ -5,6 +5,11 @@
          sign/3,
          verify/3,
          verify/4,
+         public_key/1,
+         public_key/2,
+         refresh/1,
+         refresh/2,
+         setup/1,
          check_device/0,
          check_device/1,
          device_info/0,
@@ -53,6 +58,40 @@ verify(secondary_2, Msg, Sig, Config) ->
     do_verify(?SECONDARY_PRIVATE_KEY_2, Msg, Sig, Config);
 verify(secondary_3, Msg, Sig, Config) ->
     do_verify(?SECONDARY_PRIVATE_KEY_3, Msg, Sig, Config).
+
+public_key(PubKey) ->
+    public_key(PubKey, #{}).
+
+public_key(primary, Config) ->
+    do_public_key(?PRIMARY_PRIVATE_KEY, Config);
+public_key(secondary_1, Config) ->
+    do_public_key(?SECONDARY_PRIVATE_KEY_1, Config);
+public_key(secondary_2, Config) ->
+    do_public_key(?SECONDARY_PRIVATE_KEY_2, Config);
+public_key(secondary_3, Config) ->
+    do_public_key(?SECONDARY_PRIVATE_KEY_3, Config).
+
+refresh(PrivKey) ->
+    refresh(PrivKey, #{}).
+
+refresh(secondary_1, Config) ->
+    do_refresh(?SECONDARY_PRIVATE_KEY_1, Config);
+refresh(secondary_2, Config) ->
+    do_refresh(?SECONDARY_PRIVATE_KEY_2, Config);
+refresh(secondary_3, Config) ->
+    do_refresh(?SECONDARY_PRIVATE_KEY_3, Config).
+
+
+setup(Config) ->
+    BuiltConfig = build_config(Config),
+    case grisp_cryptoauth_nif:config_locked(BuiltConfig) of
+        {ok, false} ->
+            do_setup(BuiltConfig);
+        {ok, true} ->
+            {error, config_locked};
+        Error ->
+            Error
+    end.
 
 
 check_device() ->
@@ -121,6 +160,18 @@ do_verify(SlotIdx, Msg, Sig, Config) ->
         Error ->
             Error
     end.
+
+do_public_key(SlotIdx, Config) ->
+    grisp_cryptoauth_nif:gen_public_key(build_config(Config), SlotIdx).
+
+do_refresh(SlotIdx, Config) ->
+    grisp_cryptoauth_nif:gen_private_key(build_config(Config), SlotIdx).
+
+do_setup(Config) ->
+    grisp_cryptoauth_nif:write_config(Config),
+    PrivKeys = [?PRIMARY_PRIVATE_KEY, ?SECONDARY_PRIVATE_KEY_1, ?SECONDARY_PRIVATE_KEY_2, ?SECONDARY_PRIVATE_KEY_3],
+    [grisp_cryptoauth_nif:gen_private_key(Config, SlotIdx) || SlotIdx <- PrivKeys],
+    ok.
 
 generate_device_info(Config) ->
     {ok, DeviceType} = grisp_cryptoauth_nif:device_info(Config),
