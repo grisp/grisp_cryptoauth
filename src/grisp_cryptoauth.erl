@@ -57,7 +57,9 @@ verify(secondary_1, Msg, Sig, Config) ->
 verify(secondary_2, Msg, Sig, Config) ->
     do_verify(?SECONDARY_PRIVATE_KEY_2, Msg, Sig, Config);
 verify(secondary_3, Msg, Sig, Config) ->
-    do_verify(?SECONDARY_PRIVATE_KEY_3, Msg, Sig, Config).
+    do_verify(?SECONDARY_PRIVATE_KEY_3, Msg, Sig, Config);
+verify(PubKey, Msg, Sig, Config) when is_binary(PubKey) or is_list(PubKey) ->
+    do_verify(PubKey, Msg, Sig, Config).
 
 public_key(PubKey) ->
     public_key(PubKey, #{}).
@@ -152,7 +154,11 @@ build_config(Config) ->
 do_sign(SlotIdx, Msg, Config) ->
     grisp_cryptoauth_nif:sign(build_config(Config), SlotIdx, crypto:hash(sha256, Msg)).
 
-do_verify(SlotIdx, Msg, Sig, Config) ->
+do_verify(PubKey, Msg, Sig, Config) when is_list(PubKey) ->
+    do_verify(binary:list_to_bin(PubKey), Msg, Sig, Config);
+do_verify(PubKey, Msg, Sig, Config) when is_binary(PubKey) ->
+    grisp_cryptoauth_nif:verify_extern(build_config(Config), PubKey, crypto:hash(sha256, Msg), Sig);
+do_verify(SlotIdx, Msg, Sig, Config) when is_integer(SlotIdx) ->
     BuiltConfig = build_config(Config),
     case grisp_cryptoauth_nif:gen_public_key(BuiltConfig, SlotIdx) of
         {ok, PubKey} ->
