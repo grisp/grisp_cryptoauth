@@ -189,8 +189,11 @@ generate_device_info(Config) ->
     Header = "GRiSP2 Secure Element",
     Sep = "=====================",
     DeviceTypeText = ["Type: ", atom_to_binary(DeviceType, latin1)],
-    SerialNumberText = ["Serial Number: ", atom_to_binary(SerialNumber, latin1)],
+    SerialNumberText = ["Serial Number: ", bin_to_hex(SerialNumber)],
     ConfigLockedText = ["Config Locked: ", atom_to_binary(IsConfigLocked, latin1)],
     DataLockedText = ["Data Locked: ", atom_to_binary(IsDataLocked, latin1)],
-    io:format("~n~s~n~s~n~s~n~s~n~s~n~s",
+    io_lib:format("~s~n~s~n~s~n~s~n~s~n~s~n",
               [Header, Sep, DeviceTypeText, SerialNumberText, ConfigLockedText, DataLockedText]).
+
+bin_to_hex(Bin) ->
+    lists:droplast(lists:flatten([[io_lib:format("~2.16.0B",[X]), " "] || <<X:8>> <= Bin ])).

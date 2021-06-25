@@ -146,12 +146,6 @@ static ERL_NIF_TERM mk_success_atom(ErlNifEnv* env, const char* mesg)
 }
 
 
-static ERL_NIF_TERM mk_success_string(ErlNifEnv* env, char* mesg)
-{
-    return enif_make_tuple2(env, mk_atom(env, "ok"), mk_string(env, mesg));
-}
-
-
 static ERL_NIF_TERM mk_success(ErlNifEnv* env, ERL_NIF_TERM term)
 {
     return enif_make_tuple2(env, mk_atom(env, "ok"), term);
@@ -270,10 +264,12 @@ static ERL_NIF_TERM serial_number_nif(ErlNifEnv* env, int argc, const ERL_NIF_TE
     uint8_t sn[9];
     EXEC_CA_FUN(atcab_read_serial_number, sn);
 
-    char sn_str[28];
-    bytes_to_hex(sn, 9, sn_str);
+    ERL_NIF_TERM bin_sn;
+    unsigned char *bin_data = enif_make_new_binary(env, 9, &bin_sn);
 
-    return mk_success_string(env, sn_str);
+    memcpy(bin_data, sn, 9);
+
+    return mk_success(env, bin_sn);
 }
 
 static ERL_NIF_TERM read_config_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
@@ -283,10 +279,12 @@ static ERL_NIF_TERM read_config_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM
     uint8_t config_zone[ATCA_ECC_CONFIG_SIZE];
     EXEC_CA_FUN(atcab_read_config_zone, config_zone);
 
-    char config_zone_str[3 * ATCA_ECC_CONFIG_SIZE + 1];
-    bytes_to_hex(config_zone, ATCA_ECC_CONFIG_SIZE, config_zone_str);
+    ERL_NIF_TERM bin_config_zone;
+    unsigned char *bin_data = enif_make_new_binary(env, ATCA_ECC_CONFIG_SIZE, &bin_config_zone);
 
-    return mk_success_string(env, config_zone_str);
+    memcpy(bin_data, config_zone, ATCA_ECC_CONFIG_SIZE);
+
+    return mk_success(env, bin_config_zone);
 }
 
 
@@ -346,7 +344,7 @@ static ERL_NIF_TERM gen_private_key_nif(ErlNifEnv* env, int argc, const ERL_NIF_
     EXEC_CA_FUN(atcab_genkey, (uint16_t) slot_idx, pubkey);
 
     ERL_NIF_TERM bin_pubkey;
-    char *bin_data = enif_make_new_binary(env, ATCA_ECCP256_PUBKEY_SIZE, &bin_pubkey);
+    unsigned char *bin_data = enif_make_new_binary(env, ATCA_ECCP256_PUBKEY_SIZE, &bin_pubkey);
 
     memcpy(bin_data, pubkey, ATCA_ECCP256_PUBKEY_SIZE);
 
@@ -367,7 +365,7 @@ static ERL_NIF_TERM gen_public_key_nif(ErlNifEnv* env, int argc, const ERL_NIF_T
     EXEC_CA_FUN(atcab_get_pubkey, (uint16_t) slot_idx, pubkey);
 
     ERL_NIF_TERM bin_pubkey;
-    char *bin_data = enif_make_new_binary(env, ATCA_ECCP256_PUBKEY_SIZE, &bin_pubkey);
+    unsigned char *bin_data = enif_make_new_binary(env, ATCA_ECCP256_PUBKEY_SIZE, &bin_pubkey);
 
     memcpy(bin_data, pubkey, ATCA_ECCP256_PUBKEY_SIZE);
 
@@ -392,7 +390,7 @@ static ERL_NIF_TERM sign_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]
     EXEC_CA_FUN(atcab_sign, (uint16_t) slot_idx, (uint8_t *) bin_msg.data, sig);
 
     ERL_NIF_TERM sig_term;
-    char *bin_data = enif_make_new_binary(env, ATCA_ECCP256_SIG_SIZE, &sig_term);
+    unsigned char *bin_data = enif_make_new_binary(env, ATCA_ECCP256_SIG_SIZE, &sig_term);
 
     memcpy(bin_data, sig, ATCA_ECCP256_SIG_SIZE);
 
@@ -408,13 +406,13 @@ static ERL_NIF_TERM verify_extern_nif(ErlNifEnv* env, int argc, const ERL_NIF_TE
     ErlNifBinary bin_msg;
     ErlNifBinary bin_sig;
 
-    if (!enif_inspect_binary(env, argv[1], &bin_pubkey) || (bin_msg.size != ATCA_ECCP256_PUBKEY_SIZE))
+    if (!enif_inspect_binary(env, argv[1], &bin_pubkey) || (bin_pubkey.size != ATCA_ECCP256_PUBKEY_SIZE))
         return enif_make_badarg(env);
 
     if (!enif_inspect_binary(env, argv[2], &bin_msg) || (bin_msg.size != ATCA_SHA256_DIGEST_SIZE))
         return enif_make_badarg(env);
 
-    if (!enif_inspect_binary(env, argv[3], &bin_sig) || (bin_msg.size != ATCA_ECCP256_SIG_SIZE))
+    if (!enif_inspect_binary(env, argv[3], &bin_sig) || (bin_sig.size != ATCA_ECCP256_SIG_SIZE))
         return enif_make_badarg(env);
 
     bool is_verified;
@@ -466,4 +464,4 @@ static ErlNifFunc nif_funcs[] = {
     {"verify_stored",   4, verify_stored_nif},
 };
 
-ERL_NIF_INIT(grisp_cryptoauth, nif_funcs, NULL, NULL, NULL, NULL);
+ERL_NIF_INIT(grisp_cryptoauth_nif, nif_funcs, NULL, NULL, NULL, NULL);
