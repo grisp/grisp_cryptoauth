@@ -80,6 +80,7 @@ static const uint8_t grisp_device_default_config[] = {
     0x3C, 0x00, 0x30, 0x00, 0x12, 0x00, 0x30, 0x00,  // 120 - 127    Slots 12 - 15
 };
 
+// TFLXTLS template, will be replaced by Stritzinger template
 const uint8_t grisp_cert_template_signer[520] = {
     0x30, 0x82, 0x02, 0x04, 0x30, 0x82, 0x01, 0xaa, 0xa0, 0x03, 0x02, 0x01, 0x02, 0x02, 0x10, 0x44,
     0x0e, 0xe4, 0x17, 0x0c, 0xb5, 0x45, 0xce, 0x59, 0x69, 0x8e, 0x30, 0x56, 0x99, 0x0a, 0x5d, 0x30,
@@ -206,6 +207,7 @@ const atcacert_def_t grisp_cert_def_signer = {
     .ca_cert_def            = NULL,
 };
 
+// TFLXTLS template, will be replaced by Stritzinger template
 const uint8_t grisp_cert_template_device[500] = {
     0x30, 0x82, 0x01, 0xF0, 0x30, 0x82, 0x01, 0x97, 0xA0, 0x03, 0x02, 0x01, 0x02, 0x02, 0x10, 0x55,
     0xCE, 0x2E, 0x8F, 0xF6, 0x1C, 0x62, 0x50, 0xB7, 0xE1, 0x68, 0x03, 0x54, 0x14, 0x1C, 0x94, 0x30,
@@ -362,24 +364,38 @@ const atcacert_def_t grisp_cert_def_device = {
 #define CONFIG_I2C_BUS_KEY "i2c_bus"
 #define CONFIG_I2C_ADDRESS_KEY "i2c_address"
 
+/* Helpers, don't use these directly */
 #define EXEC_CA_FUN_STATUS(STATUS, fun, args...) { \
     ATCA_STATUS STATUS = fun(args); \
     if (STATUS != ATCA_SUCCESS) \
         return MK_ERROR_STATUS(env, #fun, STATUS); \
     }
+#define EXEC_CA_CERT_FUN_STATUS(STATUS, fun, args...) { \
+    int STATUS = fun(args); \
+    if (STATUS != ATCACERT_E_SUCCESS) \
+        return MK_ERROR_STATUS(env, #fun, STATUS); \
+    }
 #define UNIQ_CA_STATUS __func__##__LINE__##_status
+
+/* Execute atcab_* functions */
 #define EXEC_CA_FUN(fun, args...) EXEC_CA_FUN_STATUS(UNIQ_CA_STATUS, fun, args)
+/* Execute atcacert_* functions */
+#define EXEC_CA_CERT_FUN(fun, args...) EXEC_CA_CERT_FUN_STATUS(UNIQ_CA_STATUS, fun, args)
+/* Init device, call before other API calls */
 #define INIT_CA_FUN { \
     ATCAIfaceCfg ATCAB_CONFIG = grisp_atcab_default_config; \
     build_atcab_config(env, &ATCAB_CONFIG, argv[0]); \
     EXEC_CA_FUN(atcab_init, &ATCAB_CONFIG) \
     }
 
+/* Return value macros */
 #define MK_OK(env) mk_atom(env, "ok")
 #define MK_ERROR(env, msg) enif_make_tuple2(env, mk_atom(env, "error"), mk_atom(env, msg))
 #define MK_ERROR_STATUS(env, msg, status) enif_make_tuple3(env, mk_atom(env, "error"), mk_atom(env, msg), enif_make_int(env, status))
 #define MK_SUCCESS(env, term) enif_make_tuple2(env, mk_atom(env, "ok"), term)
 #define MK_SUCCESS_ATOM(env, msg) enif_make_tuple2(env, mk_atom(env, "ok"), mk_atom(env, msg))
+
+#define BINARY_FROM_RAW(env, bin_term, raw, size) memcpy(enif_make_new_binary(env, size, &bin_term), raw, size)
 
 
 struct device_type_nif {
@@ -396,17 +412,6 @@ static ERL_NIF_TERM mk_atom(ErlNifEnv* env, const char* atom)
         return enif_make_atom(env, atom);
 
     return ret;
-}
-
-
-static void bytes_to_hex(uint8_t *bytes, int len, char *hex)
-{
-    /* NOTE: we always need three times the byte array length plus one here */
-    for (int idx = 0; idx < len; idx++)
-        sprintf(&hex[3 * idx], "%02X ", bytes[idx]);
-
-    /* sprintf sets the terminating \0, but one character too late */
-    hex[3 * len - 1] = '\0';
 }
 
 
@@ -512,9 +517,7 @@ static ERL_NIF_TERM serial_number_nif(ErlNifEnv* env, int argc, const ERL_NIF_TE
     EXEC_CA_FUN(atcab_read_serial_number, sn);
 
     ERL_NIF_TERM bin_sn;
-    unsigned char *bin_data = enif_make_new_binary(env, 9, &bin_sn);
-
-    memcpy(bin_data, sn, 9);
+    BINARY_FROM_RAW(env, bin_sn, sn, 9);
 
     return MK_SUCCESS(env, bin_sn);
 }
@@ -527,9 +530,7 @@ static ERL_NIF_TERM read_config_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM
     EXEC_CA_FUN(atcab_read_config_zone, config_zone);
 
     ERL_NIF_TERM bin_config_zone;
-    unsigned char *bin_data = enif_make_new_binary(env, ATCA_ECC_CONFIG_SIZE, &bin_config_zone);
-
-    memcpy(bin_data, config_zone, ATCA_ECC_CONFIG_SIZE);
+    BINARY_FROM_RAW(env, bin_config_zone, config_zone, ATCA_ECC_CONFIG_SIZE);
 
     return MK_SUCCESS(env, bin_config_zone);
 }
@@ -593,9 +594,7 @@ static ERL_NIF_TERM gen_private_key_nif(ErlNifEnv* env, int argc, const ERL_NIF_
     EXEC_CA_FUN(atcab_genkey, (uint16_t) slot_idx, pubkey);
 
     ERL_NIF_TERM bin_pubkey;
-    unsigned char *bin_data = enif_make_new_binary(env, ATCA_ECCP256_PUBKEY_SIZE, &bin_pubkey);
-
-    memcpy(bin_data, pubkey, ATCA_ECCP256_PUBKEY_SIZE);
+    BINARY_FROM_RAW(env, bin_pubkey, pubkey, ATCA_ECCP256_PUBKEY_SIZE);
 
     return MK_SUCCESS(env, bin_pubkey);
 }
@@ -614,9 +613,7 @@ static ERL_NIF_TERM gen_public_key_nif(ErlNifEnv* env, int argc, const ERL_NIF_T
     EXEC_CA_FUN(atcab_get_pubkey, (uint16_t) slot_idx, pubkey);
 
     ERL_NIF_TERM bin_pubkey;
-    unsigned char *bin_data = enif_make_new_binary(env, ATCA_ECCP256_PUBKEY_SIZE, &bin_pubkey);
-
-    memcpy(bin_data, pubkey, ATCA_ECCP256_PUBKEY_SIZE);
+    BINARY_FROM_RAW(env, bin_pubkey, pubkey, ATCA_ECCP256_PUBKEY_SIZE);
 
     return MK_SUCCESS(env, bin_pubkey);
 }
@@ -638,12 +635,10 @@ static ERL_NIF_TERM sign_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]
     uint8_t sig[ATCA_ECCP256_SIG_SIZE];
     EXEC_CA_FUN(atcab_sign, (uint16_t) slot_idx, (uint8_t *) bin_msg.data, sig);
 
-    ERL_NIF_TERM sig_term;
-    unsigned char *bin_data = enif_make_new_binary(env, ATCA_ECCP256_SIG_SIZE, &sig_term);
+    ERL_NIF_TERM bin_sig;
+    BINARY_FROM_RAW(env, bin_sig, sig, ATCA_ECCP256_SIG_SIZE);
 
-    memcpy(bin_data, sig, ATCA_ECCP256_SIG_SIZE);
-
-    return MK_SUCCESS(env, sig_term);
+    return MK_SUCCESS(env, bin_sig);
 }
 
 
@@ -752,17 +747,12 @@ static ERL_NIF_TERM gen_cert_signer_nif(ErlNifEnv* env, int argc, const ERL_NIF_
     uint8_t cert[1024];
     size_t cert_size = sizeof(cert);
 
-    ret = atcacert_read_cert(cert_def, ca_public_key, cert, &cert_size);
-    if (ret != ATCACERT_E_SUCCESS) {
-        return MK_ERROR_STATUS(env, "atcacert_read_cert", ret);
-    }
+    EXEC_CA_CERT_FUN(atcacert_read_cert, cert_def, ca_public_key, cert, &cert_size);
 
-    ERL_NIF_TERM cert_term;
-    unsigned char *bin_data = enif_make_new_binary(env, cert_size, &cert_term);
+    ERL_NIF_TERM bin_cert;
+    BINARY_FROM_RAW(env, bin_cert, cert, cert_size);
 
-    memcpy(bin_data, cert, cert_size);
-
-    return MK_SUCCESS(env, cert_term);
+    return MK_SUCCESS(env, bin_cert);
 }
 
 
@@ -780,22 +770,14 @@ static ERL_NIF_TERM gen_cert_device_nif(ErlNifEnv* env, int argc, const ERL_NIF_
     if (!enif_inspect_binary(env, argv[1], &bin_signer_cert))
         return enif_make_badarg(env);
 
-    ret = atcacert_get_subj_public_key(&grisp_cert_def_signer, (uint8_t *) bin_signer_cert.data, 1024, ca_public_key);
-    if (ret != ATCACERT_E_SUCCESS) {
-        return MK_ERROR_STATUS(env, "atcacert_get_subj_public_key", ret);
-    }
+    EXEC_CA_CERT_FUN(atcacert_get_subj_public_key, &grisp_cert_def_signer, (uint8_t *) bin_signer_cert.data, 1024, ca_public_key);
 
-    ret = atcacert_read_cert(cert_def, ca_public_key, cert, &cert_size);
-    if (ret != ATCACERT_E_SUCCESS) {
-        return MK_ERROR_STATUS(env, "atcacert_read_cert", ret);
-    }
+    EXEC_CA_CERT_FUN(atcacert_read_cert, cert_def, ca_public_key, cert, &cert_size);
 
-    ERL_NIF_TERM cert_term;
-    unsigned char *bin_data = enif_make_new_binary(env, cert_size, &cert_term);
+    ERL_NIF_TERM bin_cert;
+    BINARY_FROM_RAW(env, bin_cert, cert, cert_size);
 
-    memcpy(bin_data, cert, cert_size);
-
-    return MK_SUCCESS(env, cert_term);
+    return MK_SUCCESS(env, bin_cert);
 }
 
 
