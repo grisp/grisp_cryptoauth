@@ -15,7 +15,8 @@
          sign/3,
          verify_extern/4,
          verify_stored/4,
-         gen_cert_signer/1]).
+         gen_cert_signer/1,
+         gen_cert_device/2]).
 
 -on_load(init/0).
 
@@ -39,6 +40,7 @@ sign(_,_,_) ->              ?nif_stub.
 verify_extern(_,_,_,_) ->   ?nif_stub.
 verify_stored(_,_,_,_) ->   ?nif_stub.
 gen_cert_signer(_) ->       ?nif_stub.
+gen_cert_device(_,_) ->     ?nif_stub.
 
 init() ->
     SoName = case code:priv_dir(?APPNAME) of

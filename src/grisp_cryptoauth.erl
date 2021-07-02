@@ -15,7 +15,9 @@
          device_info/0,
          device_info/1,
          cert_signer/0,
-         cert_signer/1]).
+         cert_signer/1,
+         cert_device/1,
+         cert_device/2]).
 
 -define(PRIMARY_PRIVATE_KEY, 0).
 -define(SECONDARY_PRIVATE_KEY_1, 2).
@@ -132,8 +134,13 @@ cert_signer() ->
     cert_signer(#{}).
 
 cert_signer(Config) ->
-    grisp_cryptoauth_nif:gen_cert_signer(Config).
+    grisp_cryptoauth_nif:gen_cert_signer(build_config(Config)).
 
+cert_device(SignerCert) ->
+    cert_device(SignerCert, #{}).
+
+cert_device(SignerCert, Config) ->
+    grisp_cryptoauth_nif:gen_cert_device(build_config(Config), SignerCert).
 
 %% ---------------
 %% Config handling

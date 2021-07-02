@@ -791,6 +791,37 @@ static ERL_NIF_TERM gen_cert_signer_nif(ErlNifEnv* env, int argc, const ERL_NIF_
     return mk_success(env, cert_term);
 }
 
+static ERL_NIF_TERM gen_cert_device_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    INIT_CA_FUN;
+
+    int ret;
+    ErlNifBinary bin_signer_cert;
+    const atcacert_def_t* cert_def = &grisp_cert_def_device;
+    uint8_t ca_public_key[72];
+    uint8_t cert[1024];
+    size_t cert_size = sizeof(cert);
+
+    if (!enif_inspect_binary(env, argv[1], &bin_signer_cert))
+        return enif_make_badarg(env);
+
+    ret = atcacert_get_subj_public_key(&grisp_cert_def_signer, (uint8_t *) bin_signer_cert.data, 1024, ca_public_key);
+    if (ret != ATCACERT_E_SUCCESS) {
+        return mk_error(env, "atcacert_error");
+    }
+
+    ret = atcacert_read_cert(cert_def, ca_public_key, cert, &cert_size);
+    if (ret != ATCACERT_E_SUCCESS) {
+        return mk_error(env, "atcacert_error");
+    }
+
+    ERL_NIF_TERM cert_term;
+    unsigned char *bin_data = enif_make_new_binary(env, cert_size, &cert_term);
+
+    memcpy(bin_data, cert, cert_size);
+
+    return mk_success(env, cert_term);
+}
 
 static ErlNifFunc nif_funcs[] = {
     {"device_info",     1, device_info_nif},
@@ -809,6 +840,7 @@ static ErlNifFunc nif_funcs[] = {
     {"verify_extern",   4, verify_extern_nif},
     {"verify_stored",   4, verify_stored_nif},
     {"gen_cert_signer", 1, gen_cert_signer_nif},
+    {"gen_cert_device", 2, gen_cert_device_nif},
 };
 
 ERL_NIF_INIT(grisp_cryptoauth_nif, nif_funcs, NULL, NULL, NULL, NULL);
