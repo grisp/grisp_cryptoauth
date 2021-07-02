@@ -365,7 +365,7 @@ const atcacert_def_t grisp_cert_def_device = {
 #define EXEC_CA_FUN_STATUS(STATUS, fun, args...) { \
     ATCA_STATUS STATUS = fun(args); \
     if (STATUS != ATCA_SUCCESS) \
-        return mk_error_with_status(env, #fun, STATUS); \
+        return MK_ERROR_STATUS(env, #fun, STATUS); \
     }
 #define UNIQ_CA_STATUS __func__##__LINE__##_status
 #define EXEC_CA_FUN(fun, args...) EXEC_CA_FUN_STATUS(UNIQ_CA_STATUS, fun, args)
@@ -374,6 +374,12 @@ const atcacert_def_t grisp_cert_def_device = {
     build_atcab_config(env, &ATCAB_CONFIG, argv[0]); \
     EXEC_CA_FUN(atcab_init, &ATCAB_CONFIG) \
     }
+
+#define MK_OK(env) mk_atom(env, "ok")
+#define MK_ERROR(env, msg) enif_make_tuple2(env, mk_atom(env, "error"), mk_atom(env, msg))
+#define MK_ERROR_STATUS(env, msg, status) enif_make_tuple3(env, mk_atom(env, "error"), mk_atom(env, msg), enif_make_int(env, status))
+#define MK_SUCCESS(env, term) enif_make_tuple2(env, mk_atom(env, "ok"), term)
+#define MK_SUCCESS_ATOM(env, msg) enif_make_tuple2(env, mk_atom(env, "ok"), mk_atom(env, msg))
 
 
 struct device_type_nif {
@@ -390,42 +396,6 @@ static ERL_NIF_TERM mk_atom(ErlNifEnv* env, const char* atom)
         return enif_make_atom(env, atom);
 
     return ret;
-}
-
-
-static ERL_NIF_TERM mk_ok(ErlNifEnv* env)
-{
-    return mk_atom(env, "ok");
-}
-
-
-static ERL_NIF_TERM mk_string(ErlNifEnv* env, char* string)
-{
-    return enif_make_string(env, string, ERL_NIF_LATIN1);
-}
-
-
-static ERL_NIF_TERM mk_error(ErlNifEnv* env, const char* mesg)
-{
-    return enif_make_tuple2(env, mk_atom(env, "error"), mk_atom(env, mesg));
-}
-
-
-static ERL_NIF_TERM mk_error_with_status(ErlNifEnv* env, const char* mesg, ATCA_STATUS status)
-{
-    return enif_make_tuple3(env, mk_atom(env, "error"), mk_atom(env, mesg), enif_make_int(env, status));
-}
-
-
-static ERL_NIF_TERM mk_success_atom(ErlNifEnv* env, const char* mesg)
-{
-    return enif_make_tuple2(env, mk_atom(env, "ok"), mk_atom(env, mesg));
-}
-
-
-static ERL_NIF_TERM mk_success(ErlNifEnv* env, ERL_NIF_TERM term)
-{
-    return enif_make_tuple2(env, mk_atom(env, "ok"), term);
 }
 
 
@@ -492,7 +462,7 @@ static ERL_NIF_TERM device_info_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM
         }
     }
 
-    return name ? mk_success_atom(env, name) : mk_error(env, "unknown_device");
+    return name ? MK_SUCCESS_ATOM(env, name) : MK_ERROR(env, "unknown_device");
 }
 
 
@@ -503,7 +473,7 @@ static ERL_NIF_TERM config_locked_nif(ErlNifEnv* env, int argc, const ERL_NIF_TE
     bool is_locked = false;
     EXEC_CA_FUN(atcab_is_config_locked, &is_locked);
 
-    return mk_success_atom(env, is_locked ? "true" : "false");
+    return MK_SUCCESS_ATOM(env, is_locked ? "true" : "false");
 }
 
 
@@ -514,7 +484,7 @@ static ERL_NIF_TERM data_locked_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM
     bool is_locked = false;
     EXEC_CA_FUN(atcab_is_data_locked, &is_locked);
 
-    return mk_success_atom(env, is_locked ? "true" : "false");
+    return MK_SUCCESS_ATOM(env, is_locked ? "true" : "false");
 }
 
 
@@ -530,7 +500,7 @@ static ERL_NIF_TERM slot_locked_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 
     EXEC_CA_FUN(atcab_is_slot_locked, (uint16_t) slot_idx, &is_locked);
 
-    return mk_success_atom(env, is_locked ? "true" : "false");
+    return MK_SUCCESS_ATOM(env, is_locked ? "true" : "false");
 }
 
 
@@ -546,7 +516,7 @@ static ERL_NIF_TERM serial_number_nif(ErlNifEnv* env, int argc, const ERL_NIF_TE
 
     memcpy(bin_data, sn, 9);
 
-    return mk_success(env, bin_sn);
+    return MK_SUCCESS(env, bin_sn);
 }
 
 static ERL_NIF_TERM read_config_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
@@ -561,7 +531,7 @@ static ERL_NIF_TERM read_config_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 
     memcpy(bin_data, config_zone, ATCA_ECC_CONFIG_SIZE);
 
-    return mk_success(env, bin_config_zone);
+    return MK_SUCCESS(env, bin_config_zone);
 }
 
 
@@ -571,7 +541,7 @@ static ERL_NIF_TERM write_config_nif(ErlNifEnv* env, int argc, const ERL_NIF_TER
 
     EXEC_CA_FUN(atcab_write_config_zone, grisp_device_default_config);
 
-    return mk_ok(env);
+    return MK_OK(env);
 }
 
 
@@ -581,7 +551,7 @@ static ERL_NIF_TERM lock_config_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 
     EXEC_CA_FUN(atcab_lock_config_zone);
 
-    return mk_ok(env);
+    return MK_OK(env);
 }
 
 
@@ -591,8 +561,9 @@ static ERL_NIF_TERM lock_data_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM a
 
     EXEC_CA_FUN(atcab_lock_data_zone);
 
-    return mk_ok(env);
+    return MK_OK(env);
 }
+
 
 static ERL_NIF_TERM lock_slot_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
@@ -605,8 +576,9 @@ static ERL_NIF_TERM lock_slot_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM a
 
     EXEC_CA_FUN(atcab_lock_data_slot, (uint16_t) slot_idx);
 
-    return mk_ok(env);
+    return MK_OK(env);
 }
+
 
 static ERL_NIF_TERM gen_private_key_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
@@ -625,7 +597,7 @@ static ERL_NIF_TERM gen_private_key_nif(ErlNifEnv* env, int argc, const ERL_NIF_
 
     memcpy(bin_data, pubkey, ATCA_ECCP256_PUBKEY_SIZE);
 
-    return mk_success(env, bin_pubkey);
+    return MK_SUCCESS(env, bin_pubkey);
 }
 
 
@@ -646,7 +618,7 @@ static ERL_NIF_TERM gen_public_key_nif(ErlNifEnv* env, int argc, const ERL_NIF_T
 
     memcpy(bin_data, pubkey, ATCA_ECCP256_PUBKEY_SIZE);
 
-    return mk_success(env, bin_pubkey);
+    return MK_SUCCESS(env, bin_pubkey);
 }
 
 
@@ -671,7 +643,7 @@ static ERL_NIF_TERM sign_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]
 
     memcpy(bin_data, sig, ATCA_ECCP256_SIG_SIZE);
 
-    return mk_success(env, sig_term);
+    return MK_SUCCESS(env, sig_term);
 }
 
 
@@ -695,7 +667,7 @@ static ERL_NIF_TERM verify_extern_nif(ErlNifEnv* env, int argc, const ERL_NIF_TE
     bool is_verified;
     EXEC_CA_FUN(atcab_verify_extern, (uint8_t *) bin_msg.data, (uint8_t *) bin_sig.data, (uint8_t *) bin_pubkey.data, &is_verified);
 
-    return mk_success_atom(env, is_verified ? "true" : "false");
+    return MK_SUCCESS_ATOM(env, is_verified ? "true" : "false");
 }
 
 
@@ -719,10 +691,11 @@ static ERL_NIF_TERM verify_stored_nif(ErlNifEnv* env, int argc, const ERL_NIF_TE
     bool is_verified;
     EXEC_CA_FUN(atcab_verify_stored, (uint8_t *) bin_msg.data, (uint8_t *) bin_sig.data, (uint16_t) slot_idx, &is_verified);
 
-    return mk_success_atom(env, is_verified ? "true" : "false");
+    return MK_SUCCESS_ATOM(env, is_verified ? "true" : "false");
 }
 
 
+// will be replaces with Stritzinger CA root certificate (public key might be enough)
 const uint8_t g_cryptoauth_root_ca_002_cert[501] = {
     0x30, 0x82, 0x01, 0xf1, 0x30, 0x82, 0x01, 0x97, 0xa0, 0x03, 0x02, 0x01,
     0x02, 0x02, 0x10, 0x77, 0xd3, 0x6d, 0x95, 0x6e, 0xc8, 0xae, 0x62, 0x05,
@@ -768,6 +741,7 @@ const uint8_t g_cryptoauth_root_ca_002_cert[501] = {
     0xea, 0x5b, 0xc8, 0x7f, 0x55, 0x79, 0x99, 0x5c, 0xad
 };
 
+
 static ERL_NIF_TERM gen_cert_signer_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
     INIT_CA_FUN;
@@ -780,7 +754,7 @@ static ERL_NIF_TERM gen_cert_signer_nif(ErlNifEnv* env, int argc, const ERL_NIF_
 
     ret = atcacert_read_cert(cert_def, ca_public_key, cert, &cert_size);
     if (ret != ATCACERT_E_SUCCESS) {
-        return mk_error(env, "atcacert_error");
+        return MK_ERROR_STATUS(env, "atcacert_read_cert", ret);
     }
 
     ERL_NIF_TERM cert_term;
@@ -788,8 +762,9 @@ static ERL_NIF_TERM gen_cert_signer_nif(ErlNifEnv* env, int argc, const ERL_NIF_
 
     memcpy(bin_data, cert, cert_size);
 
-    return mk_success(env, cert_term);
+    return MK_SUCCESS(env, cert_term);
 }
+
 
 static ERL_NIF_TERM gen_cert_device_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
@@ -807,12 +782,12 @@ static ERL_NIF_TERM gen_cert_device_nif(ErlNifEnv* env, int argc, const ERL_NIF_
 
     ret = atcacert_get_subj_public_key(&grisp_cert_def_signer, (uint8_t *) bin_signer_cert.data, 1024, ca_public_key);
     if (ret != ATCACERT_E_SUCCESS) {
-        return mk_error(env, "atcacert_error");
+        return MK_ERROR_STATUS(env, "atcacert_get_subj_public_key", ret);
     }
 
     ret = atcacert_read_cert(cert_def, ca_public_key, cert, &cert_size);
     if (ret != ATCACERT_E_SUCCESS) {
-        return mk_error(env, "atcacert_error");
+        return MK_ERROR_STATUS(env, "atcacert_read_cert", ret);
     }
 
     ERL_NIF_TERM cert_term;
@@ -820,8 +795,9 @@ static ERL_NIF_TERM gen_cert_device_nif(ErlNifEnv* env, int argc, const ERL_NIF_
 
     memcpy(bin_data, cert, cert_size);
 
-    return mk_success(env, cert_term);
+    return MK_SUCCESS(env, cert_term);
 }
+
 
 static ErlNifFunc nif_funcs[] = {
     {"device_info",     1, device_info_nif},
