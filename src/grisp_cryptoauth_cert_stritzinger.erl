@@ -15,20 +15,24 @@ device_template() ->
 	            parameters = asn1_NOVALUE
 	        },
 	        issuer = {rdnSequence, [[
+              pubkey_cert_records:transform(
                 #'AttributeTypeAndValue'{
                     type = ?'id-at-commonName',
-                    value = <<"grisp.org">>
-                }
+                    value = {utf8String, "www.grisp.org"}
+                },
+              encode)
             ]]},
             validity = #'Validity'{
                 notBefore = {generalTime, "20200101000000Z"},
                 notAfter = {generalTime, "20300101000000Z"}
             },
 	        subject = {rdnSequence, [[
+              pubkey_cert_records:transform(
                 #'AttributeTypeAndValue'{
                     type = ?'id-at-commonName',
-                    value = <<"GRiSP2">>
-                }
+                    value = {utf8String, "GRiSP2"}
+                },
+              encode)
             ]]},                                     
 	        subjectPublicKeyInfo = #'OTPSubjectPublicKeyInfo'{
                 algorithm = #'PublicKeyAlgorithm'{
