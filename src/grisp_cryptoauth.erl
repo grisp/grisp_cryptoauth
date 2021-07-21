@@ -14,10 +14,10 @@
          check_device/1,
          device_info/0,
          device_info/1,
-         cert_signer/0,
-         cert_signer/1,
-         cert_device/1,
-         cert_device/2]).
+         write_cert/1,
+         write_cert/2,
+         read_cert/1,
+         read_cert/2]).
 
 -define(PRIMARY_PRIVATE_KEY, 0).
 -define(SECONDARY_PRIVATE_KEY_1, 2).
@@ -25,9 +25,9 @@
 -define(SECONDARY_PRIVATE_KEY_3, 4).
 
 -define(APP, grisp_cryptoauth).
--define(DEFAULT_DEVICE, 'ATECC608B').
+-define(DEFAULT_DEVICE, 'ATECC608').
 -define(VALID_DEVICES,
-        ['ATECC508A', 'ATECC608A', 'ATECC608B']).
+        ['ATECC508A', 'ATECC608A', 'ATECC608B', 'ATECC608']).
 -define(DEFAULT_CONFIG,
         #{type => ?DEFAULT_DEVICE,
           i2c_bus => 1,
@@ -130,17 +130,19 @@ device_info(Config) ->
             Error
     end.
 
-cert_signer() ->
-    cert_signer(#{}).
 
-cert_signer(Config) ->
-    grisp_cryptoauth_nif:gen_cert_signer(build_config(Config)).
+write_cert(Cert) ->
+    write_cert(Cert, #{}).
 
-cert_device(SignerCert) ->
-    cert_device(SignerCert, #{}).
+write_cert(Cert, Config) ->
+    grisp_cryptoauth_nif:write_cert(build_config(Config), Cert).
 
-cert_device(SignerCert, Config) ->
-    grisp_cryptoauth_nif:gen_cert_device(build_config(Config), SignerCert).
+
+read_cert(PubKey) ->
+    read_cert(PubKey, #{}).
+
+read_cert(PubKey, Config) ->
+    grisp_cryptoauth_nif:read_cert(build_config(Config), PubKey).
 
 %% ---------------
 %% Config handling

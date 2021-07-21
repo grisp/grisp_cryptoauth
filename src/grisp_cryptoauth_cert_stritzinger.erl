@@ -9,42 +9,45 @@ device_template() ->
     #'OTPCertificate'{
         tbsCertificate = #'OTPTBSCertificate'{
 	        version = v3,
-	        serialNumber = 16#FFFFFFFF,
+            %%serialNumber = 16#40FFFFFFFFFFFFFFFFFF,
+	        serialNumber = 302252471904080795963393,
             signature = #'SignatureAlgorithm'{
-	            algorithm = ?'ecdsa-with-SHA256',
-	            parameters = asn1_NOVALUE
+	            algorithm = ?'ecdsa-with-SHA256'
 	        },
 	        issuer = {rdnSequence, [[
-              pubkey_cert_records:transform(
+     %%         pubkey_cert_records:transform(
                 #'AttributeTypeAndValue'{
                     type = ?'id-at-commonName',
                     value = {utf8String, "www.grisp.org"}
-                },
-              encode)
+                }
+     %%         , encode)
             ]]},
             validity = #'Validity'{
+                %%notBefore = {generalTime, "22222222222222Z"},
+                %%notAfter =  {generalTime, "33333333333333Z"}
                 notBefore = {generalTime, "20200101000000Z"},
-                notAfter = {generalTime, "20300101000000Z"}
+                notAfter =  {generalTime, "20300101000000Z"}
             },
 	        subject = {rdnSequence, [[
-              pubkey_cert_records:transform(
+     %%         pubkey_cert_records:transform(
                 #'AttributeTypeAndValue'{
                     type = ?'id-at-commonName',
                     value = {utf8String, "GRiSP2"}
-                },
-              encode)
+                }
+     %%         , encode)
             ]]},                                     
 	        subjectPublicKeyInfo = #'OTPSubjectPublicKeyInfo'{
                 algorithm = #'PublicKeyAlgorithm'{
-                    algorithm = ?'id-ecPublicKey',
-                    parameters = asn1_NOVALUE
+                    algorithm = ?'id-ecPublicKey'
                 },
-                subjectPublicKey = <<0:(8*65)>>
+                subjectPublicKey =
+                    #'ECPoint'{point =
+                        <<0:(8*64)>>
+                    }
             }
 	    },
         signatureAlgorithm = #'SignatureAlgorithm'{
-	        algorithm = ?'ecdsa-with-SHA256',
-	        parameters = asn1_NOVALUE
+	        algorithm = ?'ecdsa-with-SHA256'
         },
-        signature = <<0:(8*64)>>
+        signature = <<0:(8*71)>>
     }.

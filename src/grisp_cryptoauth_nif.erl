@@ -15,8 +15,8 @@
          sign/3,
          verify_extern/4,
          verify_stored/4,
-         gen_cert_signer/1,
-         gen_cert_device/2]).
+         write_cert/2,
+         read_cert/2]).
 
 -on_load(init/0).
 
@@ -39,8 +39,8 @@ gen_public_key(_,_) ->      ?nif_stub.
 sign(_,_,_) ->              ?nif_stub.
 verify_extern(_,_,_,_) ->   ?nif_stub.
 verify_stored(_,_,_,_) ->   ?nif_stub.
-gen_cert_signer(_) ->       ?nif_stub.
-gen_cert_device(_,_) ->     ?nif_stub.
+write_cert(_,_) ->          ?nif_stub.
+read_cert(_,_) ->           ?nif_stub.
 
 init() ->
     SoName = case code:priv_dir(?APPNAME) of
