@@ -42,10 +42,12 @@ ATCAIfaceCfg grisp_atcab_default_config = {
  * Slot 8   General data; General public data storage (416 bytes); Clear read, Always write, Lockable
  * Slot 9   AES key; Intermediate key storage for ECDH and KDF output; No read, Always write, AES key
  * Slot 10  Device compressed certificate; Certificate primary public key in the Crypto Authentication
- *          compressed format; Clear read, No write
+ *          compressed format; Clear read, No write or writable depending on access policies set.
  * Slot 11  Signer public key; Public key for the CA (signer) that signed the device cert; Clear read, No write
+ *          or writable depending on access policies set.
  * Slot 12  Signer compressed certificate; Certificate for the CA (signer) certificate for the device
- *          certificate in the CryptoAuthentication compressed format; Clear read, No write
+ *          certificate in the CryptoAuthentication compressed format; Clear read, No write or writable
+ *          depending on access policies set.
  * Slot 13  Parent public key or general data; Parent public key for validating/invalidating the validated
  *          public key; Can also be used just as a public key or general data storage (72 bytes);
  *          Clear read, Always write, Lockable
@@ -53,9 +55,12 @@ ATCAIfaceCfg grisp_atcab_default_config = {
  *          authorization via the parent public key; Clear read, Always write, Validated (13)
  * Slot 15  Secure boot public key; Secure boot public key; Clear read, Always write, Lockable
  *
+ * Check out e.g. https://www.microchip.com/en-us/product/ATECC608B-TFLXTLS for a complete data sheet.
  *
  * The following configuration can be written at the very beginning of the provisioning process onto an
- * unconfigured device. Don't touch this without informing yourself, be very careful.
+ * unconfigured device. Don't touch this without informing yourself, be very careful. Note that Slot
+ * 10-12 are configured to be writable and lockable, so certificates can be customized after config and
+ * data are locked.
  */
 static const uint8_t grisp_device_default_config[] = {
     0x01, 0x23, 0x00, 0x00, 0x00, 0x00, 0x60, 0x01,  // 0   - 7      ignored on write (dummy data)
