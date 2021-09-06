@@ -86,104 +86,6 @@ static const uint8_t grisp_device_default_config[] = {
 };
 
 
-const uint8_t grisp_cert_template[283] = {
-    48,   130,  1,    23,   48,   129,  190,  160,  3,    2,    1,    2,    2,    10,   64,   255,
-    255,  255,  255,  255,  255,  255,  255,  255,  48,   10,   6,    8,    42,   134,  72,   206,
-    61,   4,    3,    2,    48,   24,   49,   22,   48,   20,   6,    3,    85,   4,    3,    12,
-    13,   119,  119,  119,  46,   103,  114,  105,  115,  112,  46,   111,  114,  103,  48,   34,
-    24,   15,   50,   50,   50,   50,   50,   50,   50,   50,   50,   50,   50,   50,   50,   50,
-    90,   24,   15,   51,   51,   51,   51,   51,   51,   51,   51,   51,   51,   51,   51,   51,
-    51,   90,   48,   17,   49,   15,   48,   13,   6,    3,    85,   4,    3,    12,   6,    71,
-    82,   105,  83,   80,   50,   48,   78,   48,   9,    6,    7,    42,   134,  72,   206,  61,
-    2,    1,    3,    65,   0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
-    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
-    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
-    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
-    0,    0,    0,    0,    0,    48,   10,   6,    8,    42,   134,  72,   206,  61,   4,    3,
-    2,    3,    72,   0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
-    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
-    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
-    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
-    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0
-};
-
-
-const atcacert_def_t grisp_cert_def = {
-    .type                   = CERTTYPE_X509,
-    .template_id            = 3,
-    .chain_id               = 0,
-    .private_key_slot       = 0,
-    .sn_source              = SNSRC_DEVICE_SN,
-    .cert_sn_dev_loc        = {
-        .zone               = DEVZONE_NONE,
-        .slot               = 0,
-        .is_genkey          = 0,
-        .offset             = 0,
-        .count              = 0,
-    },
-    .issue_date_format      = DATEFMT_RFC5280_GEN,
-    .expire_date_format     = DATEFMT_RFC5280_GEN,
-    .tbs_cert_loc           = {
-        .offset             = 4,
-        .count              = 193,
-    },
-    .expire_years           = 10,
-    .public_key_dev_loc     = {
-        .zone               = DEVZONE_DATA,
-        .slot               = 0,
-        .is_genkey          = 1,
-        .offset             = 0,
-        .count              = 64,
-    },
-    .comp_cert_dev_loc      = {
-        .zone               = DEVZONE_DATA,
-        .slot               = 10,
-        .is_genkey          = 0,
-        .offset             = 0,
-        .count              = 72,
-    },
-    .std_cert_elements      = {
-        {   // STDCERT_PUBLIC_KEY
-            .offset         = 133,
-            .count          = 64,
-        },
-        {   // STDCERT_SIGNATURE
-            .offset         = 209,
-            .count          = 64,
-        },
-        {   // STDCERT_ISSUE_DATE
-            .offset         = 66,
-            .count          = 15,
-        },
-        {   // STDCERT_EXPIRE_DATE
-            .offset         = 83,
-            .count          = 15,
-        },
-        {   // STDCERT_SIGNER_ID
-            .offset         = 0,
-            .count          = 0,
-        },
-        {   // STDCERT_CERT_SN
-            .offset         = 14,
-            .count          = 10,
-        },
-        {   // STDCERT_AUTH_KEY_ID
-            .offset         = 0,
-            .count          = 0,
-        },
-        {   // STDCERT_SUBJ_KEY_ID
-            .offset         = 0,
-            .count          = 0,
-        }
-    },
-    .cert_elements          = NULL,
-    .cert_elements_count    = 0,
-    .cert_template          = grisp_cert_template,
-    .cert_template_size     = sizeof(grisp_cert_template),
-    .ca_cert_def            = NULL,
-};
-
-
 #define CONFIG_DEVICE_TYPE_KEY "type"
 #define CONFIG_I2C_BUS_KEY "i2c_bus"
 #define CONFIG_I2C_ADDRESS_KEY "i2c_address"
@@ -508,40 +410,41 @@ static ERL_NIF_TERM verify_stored_nif(ErlNifEnv* env, int argc, const ERL_NIF_TE
 }
 
 
-static ERL_NIF_TERM write_cert_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+static ERL_NIF_TERM write_comp_cert_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
     INIT_CA_FUN;
 
+    int slot_idx;
     ErlNifBinary bin_cert;
-    const atcacert_def_t* cert_def = &grisp_cert_def;
 
-    if (!enif_inspect_binary(env, argv[1], &bin_cert))
+    if (!enif_get_int(env, argv[1], &slot_idx))
+	    return enif_make_badarg(env);
+
+    if (!enif_inspect_binary(env, argv[2], &bin_cert) || bin_cert.size != 72)
         return enif_make_badarg(env);
 
-    EXEC_CA_CERT_FUN(atcacert_write_cert, cert_def, (uint8_t *) bin_cert.data, bin_cert.size);
+    EXEC_CA_CERT_FUN(atcab_write_bytes_zone, ATCA_ZONE_DATA, (uint16_t) slot_idx, 0, (uint8_t *) bin_cert.data, bin_cert.size);
 
     return MK_OK(env);
 }
 
 
-static ERL_NIF_TERM read_cert_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+static ERL_NIF_TERM read_comp_cert_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
     INIT_CA_FUN;
 
-    ErlNifBinary bin_ca_public_key;
-    const atcacert_def_t* cert_def = &grisp_cert_def;
-    uint8_t cert[1024];
-    size_t cert_size = sizeof(cert);
+    int slot_idx;
 
-    if (!enif_inspect_binary(env, argv[1], &bin_ca_public_key))
-        return enif_make_badarg(env);
+    if (!enif_get_int(env, argv[1], &slot_idx))
+	    return enif_make_badarg(env);
 
-    EXEC_CA_CERT_FUN(atcacert_read_cert, cert_def, (uint8_t *) bin_ca_public_key.data, cert, &cert_size);
+    uint8_t comp_cert[72];
+    EXEC_CA_CERT_FUN(atcab_write_bytes_zone, ATCA_ZONE_DATA, (uint16_t) slot_idx, 0, (uint8_t *) comp_cert, 72);
 
-    ERL_NIF_TERM bin_cert;
-    BINARY_FROM_RAW(env, bin_cert, cert, cert_size);
+    ERL_NIF_TERM bin_comp_cert;
+    BINARY_FROM_RAW(env, bin_comp_cert, comp_cert, 72);
 
-    return MK_SUCCESS(env, bin_cert);
+    return MK_SUCCESS(env, bin_comp_cert);
 }
 
 
@@ -561,8 +464,8 @@ static ErlNifFunc nif_funcs[] = {
     {"sign",            3, sign_nif},
     {"verify_extern",   4, verify_extern_nif},
     {"verify_stored",   4, verify_stored_nif},
-    {"write_cert",      2, write_cert_nif},
-    {"read_cert",       2, read_cert_nif},
+    {"write_comp_cert", 3, write_comp_cert_nif},
+    {"read_comp_cert",  2, read_comp_cert_nif},
 };
 
 ERL_NIF_INIT(grisp_cryptoauth_nif, nif_funcs, NULL, NULL, NULL, NULL);
