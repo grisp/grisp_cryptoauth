@@ -6,6 +6,7 @@
 -export([decode_pem_file/1,
          decode_pem/1,
          encode_pem/1,
+         sign/2,
          compress/1,
          decompress/2,
          add_years/2,
@@ -38,6 +39,16 @@ encode_pem(#'OTPCertificate'{} = Cert) ->
         [{'Certificate',
           public_key:pkix_encode('OTPCertificate', Cert, otp),
           not_encrypted}]).
+
+
+sign(#'OTPTBSCertificate'{} = TBS, SignFun) ->
+    DER = public_key:pkix_encode('OTPTBSCertificate', TBS, otp),
+    %% expect DER enoded Signature here for now
+    DERSig = SignFun(DER),
+    #'OTPCertificate'{
+       tbsCertificate = TBS,
+       signatureAlgorithm = TBS#'OTPTBSCertificate'.signature,
+       signature = DERSig}.
 
 
 sigAlg() ->
