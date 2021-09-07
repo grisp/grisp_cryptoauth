@@ -146,6 +146,7 @@ decompress(TBS, <<CompSig:64/binary, CompDate:3/binary, _:5/binary>>) ->
     Sig = decompress_sig(CompSig),
     #'OTPCertificate'{
         tbsCertificate = TBS#'OTPTBSCertificate'{validity = Validity},
+        signatureAlgorithm = sigAlg(),
         signature = Sig
     }.
 
