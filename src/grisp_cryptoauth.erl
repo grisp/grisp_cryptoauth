@@ -14,10 +14,10 @@
          check_device/1,
          device_info/0,
          device_info/1,
-         write_cert/1,
-         write_cert/2,
-         read_cert/1,
-         read_cert/2]).
+         write_comp_cert/2,
+         write_comp_cert/3,
+         read_comp_cert/1,
+         read_comp_cert/2]).
 
 -define(PRIMARY_PRIVATE_KEY, 0).
 -define(SECONDARY_PRIVATE_KEY_1, 2).
@@ -131,18 +131,18 @@ device_info(Config) ->
     end.
 
 
-write_cert(Cert) ->
-    write_cert(Cert, #{}).
+write_comp_cert(Slot, CompCert) ->
+    write_comp_cert(Slot, CompCert, #{}).
 
-write_cert(Cert, Config) ->
-    grisp_cryptoauth_nif:write_cert(build_config(Config), Cert).
+write_comp_cert(Slot, CompCert, Config) ->
+    grisp_cryptoauth_nif:write_comp_cert(build_config(Config), Slot, CompCert).
 
 
-read_cert(PubKey) ->
-    read_cert(PubKey, #{}).
+read_comp_cert(Slot) ->
+    read_comp_cert(Slot, #{}).
 
-read_cert(PubKey, Config) ->
-    grisp_cryptoauth_nif:read_cert(build_config(Config), PubKey).
+read_comp_cert(Slot, Config) ->
+    grisp_cryptoauth_nif:read_comp_cert(build_config(Config), Slot).
 
 %% ---------------
 %% Config handling
