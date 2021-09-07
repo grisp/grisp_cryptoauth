@@ -1,11 +1,11 @@
--module(grisp_cryptoauth_cert_stritzinger).
+-module(grisp_cryptoauth_template).
 
 -include_lib("public_key/include/public_key.hrl").
 
--export([template/0]).
+-export([default/0]).
 
 
-template() ->
+default() ->
     IssuerCert = grisp_cryptoauth_cert:decode_pem_file("../priv/cert_test/intermediate_cert.pem"),
     IssuerCertTBS = IssuerCert#'OTPCertificate'.tbsCertificate,
     IssueDate = {{2021,9,1}, {0,0,0}},
