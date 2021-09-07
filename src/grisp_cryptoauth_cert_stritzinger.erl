@@ -2,52 +2,35 @@
 
 -include_lib("public_key/include/public_key.hrl").
 
--export([device_template/0]).
+-export([template/0]).
 
 
-device_template() ->
+template() ->
+    IssuerCert = grisp_cryptoauth_cert:decode_pem_file("../priv/cert_test/intermediate_cert.pem"),
+    IssuerCertTBS = IssuerCert#'OTPCertificate'.tbsCertificate,
+    IssueDate = {{2021,9,1}, {0,0,0}},
+    ExpireYears = 5,
+    PubKeyBlob = <<"test">>,
     #'OTPCertificate'{
         tbsCertificate = #'OTPTBSCertificate'{
 	        version = v3,
-            %%serialNumber = 16#40FFFFFFFFFFFFFFFFFF,
-	        serialNumber = 302252471904080795963393,
-            signature = #'SignatureAlgorithm'{
-	            algorithm = ?'ecdsa-with-SHA256'
-	        },
-	        issuer = {rdnSequence, [[
-     %%         pubkey_cert_records:transform(
-                #'AttributeTypeAndValue'{
-                    type = ?'id-at-commonName',
-                    value = {utf8String, "www.grisp.org"}
-                }
-     %%         , encode)
-            ]]},
-            validity = #'Validity'{
-                %%notBefore = {generalTime, "22222222222222Z"},
-                %%notAfter =  {generalTime, "33333333333333Z"}
-                notBefore = {generalTime, "20200101000000Z"},
-                notAfter =  {generalTime, "20300101000000Z"}
-            },
+	        serialNumber = 1,
+            signature = grisp_cryptoauth_cert:sigAlg(),
+	        issuer = IssuerCertTBS#'OTPTBSCertificate'.subject, 
+            validity = grisp_cryptoauth_cert:validity(IssueDate, ExpireYears),
 	        subject = {rdnSequence, [[
-     %%         pubkey_cert_records:transform(
                 #'AttributeTypeAndValue'{
                     type = ?'id-at-commonName',
                     value = {utf8String, "GRiSP2"}
                 }
-     %%         , encode)
             ]]},                                     
-	        subjectPublicKeyInfo = #'OTPSubjectPublicKeyInfo'{
-                algorithm = #'PublicKeyAlgorithm'{
-                    algorithm = ?'id-ecPublicKey'
-                },
-                subjectPublicKey =
-                    #'ECPoint'{point =
-                        <<0:(8*64)>>
-                    }
-            }
+	        subjectPublicKeyInfo = grisp_cryptoauth_cert:subjPubKeyInfo(PubKeyBlob),
+            extensions = [
+                grisp_cryptoauth_cert:ext_is_ca(false),
+                grisp_cryptoauth_cert:ext_subjkeyid(PubKeyBlob),
+                grisp_cryptoauth_cert:ext_authkeyid(IssuerCert)
+            ]
 	    },
-        signatureAlgorithm = #'SignatureAlgorithm'{
-	        algorithm = ?'ecdsa-with-SHA256'
-        },
-        signature = <<0:(8*71)>>
+        signatureAlgorithm =  grisp_cryptoauth_cert:sigAlg(),
+        signature = <<>>
     }.

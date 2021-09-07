@@ -9,8 +9,9 @@
          compress/1,
          decompress/2,
          add_years/2,
-         subjPubKey/1,
+         subjPubKeyInfo/1,
          sigAlg/0,
+         validity/2,
          ext_authkeyid/1,
          ext_subjkeyid/1,
          ext_is_ca/1]).
@@ -43,7 +44,14 @@ sigAlg() ->
     #'SignatureAlgorithm'{algorithm = ?'ecdsa-with-SHA256'}.
 
 
-subjPubKey(PubKeyBlob) ->
+validity(TS, Years) ->
+    #'Validity'{
+        notBefore = ts_to_utc_or_general_time(TS),
+        notAfter =  add_years(TS, Years)
+    }.
+
+
+subjPubKeyInfo(PubKeyBlob) ->
     #'OTPSubjectPublicKeyInfo'{
        algorithm =
          #'PublicKeyAlgorithm'{
