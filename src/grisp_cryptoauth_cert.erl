@@ -7,7 +7,7 @@
          decode_pem/1,
          encode_pem/1,
          sign/2,
-         compress/1,
+         compress/3,
          decompress/2,
          add_years/2,
          subjPubKeyInfo/1,
@@ -118,11 +118,12 @@ do_add_years(TS, Years) ->
     ts_to_utc_or_general_time(TSAdd).
 
 
-compress(Cert) ->
+compress(Cert, TemplateId, ChainId) ->
     TBS = Cert#'OTPCertificate'.tbsCertificate,
     CompDate = compress_date(TBS#'OTPTBSCertificate'.validity),
     CompSig = compress_sig(Cert#'OTPCertificate'.signature),
-    <<CompSig:64/binary, CompDate:3/binary, 0:5/unit:8>>.
+    <<CompSig:64/binary, CompDate:3/binary,
+      0:16, TemplateId:4, ChainId:4, 0:16>>.
 
 
 compress_sig(Sig) ->

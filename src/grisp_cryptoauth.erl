@@ -14,10 +14,10 @@
          check_device/1,
          device_info/0,
          device_info/1,
+         read_cert/2,
          read_cert/3,
-         read_cert/4,
-         write_cert/2,
          write_cert/3,
+         write_cert/4,
          read_comp_cert/1,
          read_comp_cert/2,
          write_comp_cert/2,
@@ -32,6 +32,7 @@
 -define(SECONDARY_PRIVATE_KEY_2, 3).
 -define(SECONDARY_PRIVATE_KEY_3, 4).
 -define(DEVICE_CERT, 10).
+-define(DEFAULT_TEMPLATES, [{{0, 0}, test}]).
 
 -define(APP, grisp_cryptoauth).
 -define(DEFAULT_DEVICE, 'ATECC608').
@@ -140,26 +141,40 @@ device_info(Config) ->
     end.
 
 
-read_cert(Type, TBS, DerOrPlain) ->
-    read_cert(Type, TBS, DerOrPlain, #{}).
+read_cert(Type, DerOrPlain) ->
+    read_cert(Type, DerOrPlain, #{}).
 
-read_cert(device, #'OTPTBSCertificate'{} = TBS, DerOrPlain, Config) ->
+read_cert(device, DerOrPlain, Config) ->
     CompCert = read_comp_cert(?DEVICE_CERT, Config),
-    Cert = grisp_cryptoauth_cert:decompress(TBS, CompCert),
-    case DerOrPlain of
-        plain ->
-            Cert;
-        der ->
-            public_key:pkix_encode('OTPCertificate', Cert, otp)
+    <<TemplateId:4, ChainId:4>> = <<(binary:at(CompCert, 69))>>,
+    Templates = application:get_env(grisp_cryptoauth, templates, ?DEFAULT_TEMPLATES),
+    case lists:keyfind({TemplateId, ChainId}, 1, Templates) of
+        false ->
+            {error, {undefined, {TemplateId, ChainId}}};
+        {_, TBSFunName} ->
+            TBS = grisp_cryptoauth_template:TBSFunName(),
+            Cert = grisp_cryptoauth_cert:decompress(TBS, CompCert),
+            case DerOrPlain of
+                plain ->
+                    Cert;
+                der ->
+                    public_key:pkix_encode('OTPCertificate', Cert, otp)
+            end
     end.
 
 
-write_cert(Type, Cert) ->
-    write_cert(Type, Cert, #{}).
+write_cert(Type, TBSFunName, Cert) ->
+    write_cert(Type, TBSFunName, Cert, #{}).
 
-write_cert(device, #'OTPCertificate'{} = Cert, Config) ->
-    CompCert = grisp_cryptoauth_cert:compress(Cert),
-    write_comp_cert(?DEVICE_CERT, CompCert, Config).
+write_cert(device, TBSFunName, Cert, Config) ->
+    Templates = application:get_env(grisp_cryptoauth, templates, ?DEFAULT_TEMPLATES),
+    case lists:keyfind(TBSFunName, 2, Templates) of
+        false ->
+            {error, {undefined, TBSFunName}};
+        {{TemplateId, ChainId}, _} ->
+            CompCert = grisp_cryptoauth_cert:compress(Cert, TemplateId, ChainId),
+            write_comp_cert(?DEVICE_CERT, CompCert, Config)
+    end.
 
 
 read_comp_cert(Slot) ->
