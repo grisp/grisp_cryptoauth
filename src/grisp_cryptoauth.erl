@@ -14,15 +14,24 @@
          check_device/1,
          device_info/0,
          device_info/1,
-         write_comp_cert/2,
-         write_comp_cert/3,
+         read_cert/3,
+         read_cert/4,
+         write_cert/2,
+         write_cert/3,
          read_comp_cert/1,
-         read_comp_cert/2]).
+         read_comp_cert/2,
+         write_comp_cert/2,
+         write_comp_cert/3]).
+
+
+-include_lib("public_key/include/public_key.hrl").
+
 
 -define(PRIMARY_PRIVATE_KEY, 0).
 -define(SECONDARY_PRIVATE_KEY_1, 2).
 -define(SECONDARY_PRIVATE_KEY_2, 3).
 -define(SECONDARY_PRIVATE_KEY_3, 4).
+-define(DEVICE_CERT, 10).
 
 -define(APP, grisp_cryptoauth).
 -define(DEFAULT_DEVICE, 'ATECC608').
@@ -131,11 +140,26 @@ device_info(Config) ->
     end.
 
 
-write_comp_cert(Slot, CompCert) ->
-    write_comp_cert(Slot, CompCert, #{}).
+read_cert(Type, TBS, DerOrPlain) ->
+    read_cert(Type, TBS, DerOrPlain, #{}).
 
-write_comp_cert(Slot, CompCert, Config) ->
-    grisp_cryptoauth_nif:write_comp_cert(build_config(Config), Slot, CompCert).
+read_cert(device, #'OTPTBSCertificate'{} = TBS, DerOrPlain, Config) ->
+    CompCert = read_comp_cert(?DEVICE_CERT, Config),
+    Cert = grisp_cryptoauth_cert:decompress(TBS, CompCert),
+    case DerOrPlain of
+        plain ->
+            Cert;
+        der ->
+            public_key:pkix_encode('OTPCertificate', Cert, otp)
+    end.
+
+
+write_cert(Type, Cert) ->
+    write_cert(Type, Cert, #{}).
+
+write_cert(device, #'OTPCertificate'{} = Cert, Config) ->
+    CompCert = grisp_cryptoauth_cert:compress(Cert),
+    write_comp_cert(?DEVICE_CERT, CompCert, Config).
 
 
 read_comp_cert(Slot) ->
@@ -143,6 +167,14 @@ read_comp_cert(Slot) ->
 
 read_comp_cert(Slot, Config) ->
     grisp_cryptoauth_nif:read_comp_cert(build_config(Config), Slot).
+
+
+write_comp_cert(Slot, CompCert) ->
+    write_comp_cert(Slot, CompCert, #{}).
+
+write_comp_cert(Slot, CompCert, Config) ->
+    grisp_cryptoauth_nif:write_comp_cert(build_config(Config), Slot, CompCert).
+
 
 %% ---------------
 %% Config handling

@@ -138,11 +138,11 @@ compress_date(#'Validity'{notBefore = NotBefore} = Validity) ->
       ExpireYears:1/unsigned-integer-unit:5>>.
 
 
-decompress(TBSCert, <<CompSig:64/binary, CompDate:3/binary, _:5/binary>>) ->
+decompress(TBS, <<CompSig:64/binary, CompDate:3/binary, _:5/binary>>) ->
     Validity = decompress_date(CompDate),
     Sig = decompress_sig(CompSig),
     #'OTPCertificate'{
-        tbsCertificate = TBSCert#'OTPTBSCertificate'{validity = Validity},
+        tbsCertificate = TBS#'OTPTBSCertificate'{validity = Validity},
         signature = Sig
     }.
 
