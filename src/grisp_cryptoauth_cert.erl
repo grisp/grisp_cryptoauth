@@ -3,9 +3,17 @@
 -include_lib("public_key/include/public_key.hrl").
 
 %% Public API
--export([compress/1,
+-export([decode_pem_file/1,
+         decode_pem/1,
+         encode_pem/1,
+         compress/1,
          decompress/2,
-         add_years/2]).
+         add_years/2,
+         subjPubKey/1,
+         sigAlg/0,
+         ext_authkeyid/1,
+         ext_subjkeyid/1,
+         ext_is_ca/1]).
 
 %% Testing
 -export([compress_sig/1, decompress_sig/1,
@@ -15,8 +23,73 @@
 -define(MAX_NOT_AFTER, {generalTime, "99991231235959Z"}).
 
 
+decode_pem_file(FilePath) ->
+    decode_pem(element(2, file:read_file(FilePath))).
+
+
+decode_pem(PEM) ->
+    public_key:pkix_decode_cert(
+      element(2, hd(public_key:pem_decode(PEM))), otp).
+
+
+encode_pem(#'OTPCertificate'{} = Cert) ->
+    public_key:pem_encode(
+        [{'Certificate',
+          public_key:pkix_encode('OTPCertificate', Cert, otp),
+          not_encrypted}]).
+
+
+sigAlg() ->
+    #'SignatureAlgorithm'{algorithm = ?'ecdsa-with-SHA256'}.
+
+
+subjPubKey(PubKeyBlob) ->
+    #'OTPSubjectPublicKeyInfo'{
+       algorithm =
+         #'PublicKeyAlgorithm'{
+           algorithm = ?'id-ecPublicKey',
+           parameters = {namedCurve, ?'secp256r1'}},
+       subjectPublicKey =
+         #'ECPoint'{point = PubKeyBlob}
+    }.
+
+
+ext_authkeyid(#'OTPCertificate'{tbsCertificate = TBS}) ->
+    SerialNumber = TBS#'OTPTBSCertificate'.serialNumber,
+    RDNSequence = TBS#'OTPTBSCertificate'.subject,
+    Extensions = TBS#'OTPTBSCertificate'.extensions,
+    #'Extension'{extnValue = SubjectKeyId} =
+        lists:keyfind(?'id-ce-subjectKeyIdentifier', 2, Extensions),
+    #'Extension'{
+       extnID = ?'id-ce-authorityKeyIdentifier',
+       extnValue = 
+        #'AuthorityKeyIdentifier'{
+            keyIdentifier = SubjectKeyId,
+            authorityCertIssuer = [{directoryName, RDNSequence}],
+            authorityCertSerialNumber = SerialNumber}
+      }.
+
+
+ext_subjkeyid(PubKeyBlob) ->
+    #'Extension'{
+       extnID = ?'id-ce-subjectKeyIdentifier',
+       extnValue = crypto:hash(sha, PubKeyBlob)}.
+
+
+ext_is_ca(IsCA) ->
+    #'Extension'{
+       extnID = ?'id-ce-basicConstraints',
+       extnValue = #'BasicConstraints'{cA = IsCA}}.
+
+
+add_years({Date, _} = TS, Years) when is_tuple(Date) ->
+    do_add_years(TS, Years);
 add_years(UTCorGeneralTime, Years) ->
     TS = utc_or_general_time_to_ts(UTCorGeneralTime),
+    do_add_years(TS, Years).
+
+
+do_add_years(TS, Years) ->
     Secs = calendar:datetime_to_gregorian_seconds(TS),
     SecsToAdd = 60 * 60 * 24 * 365 * Years,
     TSAdd = calendar:gregorian_seconds_to_datetime(Secs + SecsToAdd),
