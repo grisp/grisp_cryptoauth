@@ -2,10 +2,10 @@
 
 -include_lib("public_key/include/public_key.hrl").
 
--export([default/0]).
+-export([test/0]).
 
 
-default() ->
+test() ->
     IssuerCert = grisp_cryptoauth_cert:decode_pem_file("../priv/cert_test/intermediate_cert.pem"),
     IssuerCertTBS = IssuerCert#'OTPCertificate'.tbsCertificate,
     IssueDate = {{2021,9,1}, {0,0,0}},
@@ -20,7 +20,7 @@ default() ->
         subject = {rdnSequence, [[
             #'AttributeTypeAndValue'{
                 type = ?'id-at-commonName',
-                value = {utf8String, "GRiSP2"}
+                value = {utf8String, "client test"}
             }
         ]]},
         subjectPublicKeyInfo = grisp_cryptoauth_cert:subjPubKeyInfo(PubKeyBlob),
