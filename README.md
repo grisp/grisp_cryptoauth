@@ -1,12 +1,33 @@
 grisp_cryptoauth
 ================
 
-An OTP library
+Secure Element support for GRiSP2 based on cryptoauthlib.
 
 Build
 -----
 
-    $ rebar3 compile
+This is meant to be build within the GRiSP2 toolchain.
+
+
+Writing Certificates
+--------------------
+
+```
+PrivateKey = public_key:generate_key({namedCurve, secp256r1}).
+TBS = grisp_cryptoauth_template:default().
+Cert = grisp_cryptoauth_cert:sign(TBS, PrivateKey).
+grisp_cryptoauth:write_cert(device, Cert).
+```
+
+
+Reading Certificates
+--------------------
+
+```
+TBS = grisp_cryptoauth_template:default().
+grisp_cryptoauth:read_cert(device, TBS, plain).
+```
+
 
 Notes
 -----

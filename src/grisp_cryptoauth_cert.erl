@@ -41,14 +41,17 @@ encode_pem(#'OTPCertificate'{} = Cert) ->
           not_encrypted}]).
 
 
-sign(#'OTPTBSCertificate'{} = TBS, SignFun) ->
+sign(#'OTPTBSCertificate'{} = TBS, SignFun) when is_function(SignFun) ->
     DER = public_key:pkix_encode('OTPTBSCertificate', TBS, otp),
     %% expect DER enoded Signature here for now
     DERSig = SignFun(DER),
     #'OTPCertificate'{
        tbsCertificate = TBS,
        signatureAlgorithm = TBS#'OTPTBSCertificate'.signature,
-       signature = DERSig}.
+       signature = DERSig};
+sign(#'OTPTBSCertificate'{} = TBS, PrivateKey) ->
+    public_key:pkix_decode_cert(
+      public_key:pkix_sign(TBS, PrivateKey), otp).
 
 
 sigAlg() ->
