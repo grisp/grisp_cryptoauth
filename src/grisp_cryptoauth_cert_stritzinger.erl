@@ -10,7 +10,7 @@ template() ->
     IssuerCertTBS = IssuerCert#'OTPCertificate'.tbsCertificate,
     IssueDate = {{2021,9,1}, {0,0,0}},
     ExpireYears = 5,
-    PubKeyBlob = <<"test">>,
+    PubKeyBlob = <<0:(65*8)>>,
     #'OTPCertificate'{
         tbsCertificate = #'OTPTBSCertificate'{
 	        version = v3,
@@ -32,5 +32,5 @@ template() ->
             ]
 	    },
         signatureAlgorithm =  grisp_cryptoauth_cert:sigAlg(),
-        signature = <<>>
+        signature = <<0:(71*8)>>
     }.
