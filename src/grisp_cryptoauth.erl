@@ -232,7 +232,8 @@ do_verify(SlotIdx, Msg, Sig, Config) when is_integer(SlotIdx) ->
     end.
 
 do_public_key(SlotIdx, Config) ->
-    grisp_cryptoauth_nif:gen_public_key(build_config(Config), SlotIdx).
+    PubKey = grisp_cryptoauth_nif:gen_public_key(build_config(Config), SlotIdx),
+    <<16#04, PubKey:64/binary>>.
 
 do_refresh(SlotIdx, Config) ->
     grisp_cryptoauth_nif:gen_private_key(build_config(Config), SlotIdx).
