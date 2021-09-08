@@ -9,6 +9,7 @@
          sign/2,
          compress/3,
          decompress/2,
+         print/1,
          add_years/2,
          subjPubKeyInfo/1,
          sigAlg/0,
@@ -194,6 +195,10 @@ decompress_date(<<Year:1/unsigned-integer-unit:5,
                 add_years(NotBefore, ExpireYears)
         end,
     #'Validity'{notBefore = NotBefore, notAfter = NotAfter}.
+
+
+print(#'OTPCertificate'{} = Cert) ->
+    io:format("~s", [encode_pem(Cert)]).
 
 
 %%%%%%%%%%%%%%
