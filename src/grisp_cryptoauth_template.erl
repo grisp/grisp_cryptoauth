@@ -24,7 +24,7 @@ test() ->
         subject = {rdnSequence, [[
             #'AttributeTypeAndValue'{
                 type = ?'id-at-commonName',
-                value = {utf8String, "client test"}
+                value = {utf8String, "client"}
             }
         ]]},
         subjectPublicKeyInfo = grisp_cryptoauth_cert:subjPubKeyInfo(PubKeyBlob),
