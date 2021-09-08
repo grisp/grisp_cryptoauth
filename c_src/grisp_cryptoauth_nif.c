@@ -96,17 +96,10 @@ static const uint8_t grisp_device_default_config[] = {
     if (STATUS != ATCA_SUCCESS) \
         return MK_ERROR_STATUS(env, #fun, STATUS); \
     }
-#define EXEC_CA_CERT_FUN_STATUS(STATUS, fun, args...) { \
-    int STATUS = fun(args); \
-    if (STATUS != ATCACERT_E_SUCCESS) \
-        return MK_ERROR_STATUS(env, #fun, STATUS); \
-    }
 #define UNIQ_CA_STATUS __func__##__LINE__##_status
 
 /* Execute atcab_* functions */
 #define EXEC_CA_FUN(fun, args...) EXEC_CA_FUN_STATUS(UNIQ_CA_STATUS, fun, args)
-/* Execute atcacert_* functions */
-#define EXEC_CA_CERT_FUN(fun, args...) EXEC_CA_CERT_FUN_STATUS(UNIQ_CA_STATUS, fun, args)
 /* Init device, call before other API calls */
 #define INIT_CA_FUN \
     ATCAIfaceCfg ATCAB_CONFIG = grisp_atcab_default_config; \
@@ -423,7 +416,7 @@ static ERL_NIF_TERM write_comp_cert_nif(ErlNifEnv* env, int argc, const ERL_NIF_
     if (!enif_inspect_binary(env, argv[2], &bin_cert) || bin_cert.size != 72)
         return enif_make_badarg(env);
 
-    EXEC_CA_CERT_FUN(atcab_write_bytes_zone, ATCA_ZONE_DATA, (uint16_t) slot_idx, 0, (uint8_t *) bin_cert.data, bin_cert.size);
+    EXEC_CA_FUN(atcab_write_bytes_zone, ATCA_ZONE_DATA, (uint16_t) slot_idx, 0, (uint8_t *) bin_cert.data, bin_cert.size);
 
     return MK_OK(env);
 }
@@ -439,7 +432,7 @@ static ERL_NIF_TERM read_comp_cert_nif(ErlNifEnv* env, int argc, const ERL_NIF_T
 	    return enif_make_badarg(env);
 
     uint8_t comp_cert[72];
-    EXEC_CA_CERT_FUN(atcab_write_bytes_zone, ATCA_ZONE_DATA, (uint16_t) slot_idx, 0, (uint8_t *) comp_cert, 72);
+    EXEC_CA_FUN(atcab_write_bytes_zone, ATCA_ZONE_DATA, (uint16_t) slot_idx, 0, (uint8_t *) comp_cert, 72);
 
     ERL_NIF_TERM bin_comp_cert;
     BINARY_FROM_RAW(env, bin_comp_cert, comp_cert, 72);
