@@ -15,6 +15,8 @@
          validity/2,
          ext_authkeyid/1,
          ext_subjkeyid/1,
+         ext_keyusage/1,
+         ext_extkeyusage/1,
          ext_is_ca/1]).
 
 %% Testing
@@ -100,6 +102,22 @@ ext_subjkeyid(PubKeyBlob) ->
     #'Extension'{
        extnID = ?'id-ce-subjectKeyIdentifier',
        extnValue = crypto:hash(sha, PubKeyBlob)}.
+
+
+ext_keyusage(UsageList) ->
+    #'Extension'{
+       extnID = ?'id-ce-keyUsage',
+       extnValue = UsageList}.
+
+
+ext_extkeyusage(client) ->
+    #'Extension'{
+       extnID = ?'id-ce-extKeyUsage',
+       extnValue = [?'id-kp-clientAuth']};
+ext_extkeyusage(server) ->
+    #'Extension'{
+       extnID = ?'id-ce-extKeyUsage',
+       extnValue = [?'id-kp-serverAuth']}.
 
 
 ext_is_ca(IsCA) ->

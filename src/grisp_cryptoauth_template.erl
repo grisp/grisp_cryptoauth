@@ -27,6 +27,8 @@ test() ->
         extensions = [
             grisp_cryptoauth_cert:ext_is_ca(false),
             grisp_cryptoauth_cert:ext_subjkeyid(PubKeyBlob),
-            grisp_cryptoauth_cert:ext_authkeyid(IssuerCert)
+            grisp_cryptoauth_cert:ext_authkeyid(IssuerCert),
+            grisp_cryptoauth_cert:ext_keyusage([digitalSignature, keyAgreement]),
+            grisp_cryptoauth_cert:ext_extkeyusage(client)
         ]
     }.
