@@ -432,7 +432,7 @@ static ERL_NIF_TERM read_comp_cert_nif(ErlNifEnv* env, int argc, const ERL_NIF_T
 	    return enif_make_badarg(env);
 
     uint8_t comp_cert[72];
-    EXEC_CA_FUN(atcab_write_bytes_zone, ATCA_ZONE_DATA, (uint16_t) slot_idx, 0, (uint8_t *) comp_cert, 72);
+    EXEC_CA_FUN(atcab_read_bytes_zone, ATCA_ZONE_DATA, (uint16_t) slot_idx, 0, (uint8_t *) comp_cert, 72);
 
     ERL_NIF_TERM bin_comp_cert;
     BINARY_FROM_RAW(env, bin_comp_cert, comp_cert, 72);

@@ -145,7 +145,7 @@ read_cert(Type, DerOrPlain) ->
     read_cert(Type, DerOrPlain, #{}).
 
 read_cert(device, DerOrPlain, Config) ->
-    CompCert = read_comp_cert(?DEVICE_CERT, Config),
+    {ok, CompCert} = read_comp_cert(?DEVICE_CERT, Config),
     <<TemplateId:4, ChainId:4>> = <<(binary:at(CompCert, 69))>>,
     Templates = application:get_env(grisp_cryptoauth, templates, ?DEFAULT_TEMPLATES),
     case lists:keyfind({TemplateId, ChainId}, 1, Templates) of
