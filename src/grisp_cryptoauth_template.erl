@@ -5,8 +5,24 @@
 -export([test/0]).
 
 
+issuer_cert() ->
+<<"-----BEGIN CERTIFICATE-----
+MIIB4DCCAUKgAwIBAgIBATAKBggqhkjOPQQDAjAPMQ0wCwYDVQQDDARyb290MB4X
+DTIxMDkwNjE1MjI0NloXDTMxMDkwNDE1MjI0NlowFzEVMBMGA1UEAwwMaW50ZXJt
+ZWRpYXRlMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEIeo35aTGFRmCqt5OFW2w
+gQcp+70HVWCOCjaBFmjAjX8dw/RyzWXms03geoNuxRWdLaJwOy47g/77AIOzz/+N
+pKOBhjCBgzAMBgNVHRMEBTADAQH/MDgGA1UdIwQxMC+AFIBiOcLn0SzD6WGK3kb2
+v1PELACpoROkETAPMQ0wCwYDVQQDDARyb290ggID6TAdBgNVHQ4EFgQUF9xB8fry
+mlABcPuzG6wTy8YwAHkwGgYDVR0RBBMwEYIJbG9jYWxob3N0hwR/AAABMAoGCCqG
+SM49BAMCA4GLADCBhwJBfKts5a35296qf2KT+1Tl21Cxy+1+JQoAgAmFjtAbJMTx
+RTi3ZRXB31J86iihcAkXSCCqti7pBM85iHmIQ+v1kYgCQgH2HjDkpJrdgh3WoWyy
+EvHPxWQkWn4hQONSMu4lCY8R0tsJr0m4U+sVJs+GrxmiaEmrcjWO55x9IwGZBxuM
+GVh3ZQ==
+-----END CERTIFICATE-----">>.
+
+
 test() ->
-    IssuerCert = grisp_cryptoauth_cert:decode_pem_file("../priv/cert_test/intermediate_cert.pem"),
+    IssuerCert = grisp_cryptoauth_cert:decode_pem(issuer_cert()),
     IssuerCertTBS = IssuerCert#'OTPCertificate'.tbsCertificate,
     IssueDate = {{2021,9,1}, {0,0,0}},
     ExpireYears = 5,
