@@ -152,7 +152,12 @@ read_cert(device, DerOrPlain, Config) ->
         false ->
             {error, {undefined, {TemplateId, ChainId}}};
         {_, TBSFunName} ->
-            TBS = grisp_cryptoauth_template:TBSFunName(),
+            TBS = case TBSFunName of
+                      {Mod, Fun} ->
+                          Mod:Fun();
+                      _ ->
+                          grisp_cryptoauth_template:TBSFunName()
+                  end,
             Cert = grisp_cryptoauth_cert:decompress(TBS, CompCert),
             case DerOrPlain of
                 plain ->
