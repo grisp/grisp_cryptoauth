@@ -14,9 +14,8 @@ Writing Certificates
 
 ```
 PrivateKey = public_key:generate_key({namedCurve, secp256r1}).
-TBS = grisp_cryptoauth_template:test().
-Cert = grisp_cryptoauth_cert:sign(TBS, PrivateKey).
-grisp_cryptoauth:write_cert(device, Cert).
+Cert = grisp_cryptoauth_cert:sign(test, PrivateKey).
+grisp_cryptoauth:write_cert(device, test, Cert).
 ```
 
 
@@ -24,8 +23,7 @@ Reading Certificates
 --------------------
 
 ```
-TBS = grisp_cryptoauth_template:test().
-grisp_cryptoauth:read_cert(device, TBS, plain).
+grisp_cryptoauth:read_cert(device, plain).
 ```
 
 

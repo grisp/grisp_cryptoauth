@@ -51,7 +51,11 @@ sign(#'OTPTBSCertificate'{} = TBS, SignFun) when is_function(SignFun) ->
        signature = DERSig};
 sign(#'OTPTBSCertificate'{} = TBS, PrivateKey) ->
     public_key:pkix_decode_cert(
-      public_key:pkix_sign(TBS, PrivateKey), otp).
+      public_key:pkix_sign(TBS, PrivateKey), otp);
+sign({Mod, Fun}, SignFunOrPrivateKey) ->
+    sign(Mod:Fun(), SignFunOrPrivateKey);
+sign(Fun, SignFunOrPrivateKey) when is_atom(Fun) ->
+    sign(grisp_cryptoauth_template:Fun(), SignFunOrPrivateKey).
 
 
 sigAlg() ->
