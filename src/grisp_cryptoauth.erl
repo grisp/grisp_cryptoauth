@@ -1,7 +1,9 @@
 -module(grisp_cryptoauth).
 
 %% Main API
--export([sign/2,
+-export([init/0,
+         init/1,
+         sign/2,
          sign/3,
          verify/3,
          verify/4,
@@ -47,6 +49,14 @@
 %% ---------------
 %% Main API
 %% ---------------
+
+init() ->
+    init(#{}).
+
+init(Config) ->
+    BuiltConfig = build_config(Config),
+    grisp_cryptoauth_nif:init_device(BuiltConfig).
+
 
 sign(PrivKey, Msg) ->
     sign(PrivKey, Msg, #{}).

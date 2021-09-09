@@ -19,6 +19,15 @@ ATCAIfaceCfg grisp_atcab_default_config = {
     .rx_retries                 = 20
 };
 
+
+ErlNifResourceType *device_resource_type;
+
+struct device_context_t {
+    ATCAIfaceCfg config;
+    ATCADevice device;
+};
+
+
 /*
  * Device Configuration, shamelessly stolen from Microchip's ATECC608B-TFLXTLSS. This configuration
  * is supposed to support all our envisioned usecases based on the TrustFLEX configuration, in
@@ -100,11 +109,20 @@ static const uint8_t grisp_device_default_config[] = {
 
 /* Execute atcab_* functions */
 #define EXEC_CA_FUN(fun, args...) EXEC_CA_FUN_STATUS(UNIQ_CA_STATUS, fun, args)
+
 /* Init device, call before other API calls */
 #define INIT_CA_FUN \
     ATCAIfaceCfg ATCAB_CONFIG = grisp_atcab_default_config; \
     build_atcab_config(env, &ATCAB_CONFIG, argv[0]); \
     EXEC_CA_FUN(atcab_init, &ATCAB_CONFIG) \
+
+/* Init device context */
+#define INIT_DEVICE \
+    struct device_context_t *DEVICE_CONTEXT; \
+    if(!enif_get_resource(env, argv[0], device_resource_type, (void**) &DEVICE_CONTEXT)){ \
+	    return enif_make_badarg(env); \
+    } \
+    ATCADevice DEVICE = DEVICE_CONTEXT->device; \
 
 /* Return value macros */
 #define MK_OK(env) mk_atom(env, "ok")
@@ -168,6 +186,42 @@ static void build_atcab_config(ErlNifEnv* env, ATCAIfaceCfg *atcab_config, ERL_N
 }
 
 
+int load(ErlNifEnv* env, void** priv_data, ERL_NIF_TERM load_info)
+{
+    /*
+     * TODO: Destructor missing
+     * https://github.com/MicrochipTech/cryptoauthlib/issues/240
+     * --> wait for release 3.3.3
+     */
+    device_resource_type =
+        enif_open_resource_type(env, NULL, "device_resource",
+                                NULL, ERL_NIF_RT_CREATE, NULL);
+
+    return 0;
+}
+
+
+static ERL_NIF_TERM init_device_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    struct device_context_t *device_context;
+    ERL_NIF_TERM device_context_term;
+
+    device_context = enif_alloc_resource(device_resource_type, sizeof(struct device_context_t));
+
+    device_context->device = NULL;
+    device_context->config = grisp_atcab_default_config;
+
+    build_atcab_config(env, &device_context->config, argv[0]);
+
+    EXEC_CA_FUN(atcab_init_ext, &device_context->device, &device_context->config);
+
+    device_context_term = enif_make_resource(env, device_context);
+    enif_release_resource(device_context);
+
+    return MK_SUCCESS(env, device_context_term);
+}
+
+
 static ERL_NIF_TERM device_info_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
     INIT_CA_FUN;
@@ -186,10 +240,10 @@ static ERL_NIF_TERM device_info_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 
 static ERL_NIF_TERM config_locked_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    INIT_CA_FUN;
+    INIT_DEVICE;
 
     bool is_locked = false;
-    EXEC_CA_FUN(atcab_is_config_locked, &is_locked);
+    EXEC_CA_FUN(calib_is_locked, DEVICE, LOCK_ZONE_CONFIG, &is_locked);
 
     return MK_SUCCESS_ATOM(env, is_locked ? "true" : "false");
 }
@@ -442,6 +496,7 @@ static ERL_NIF_TERM read_comp_cert_nif(ErlNifEnv* env, int argc, const ERL_NIF_T
 
 
 static ErlNifFunc nif_funcs[] = {
+    {"init_device",     1, init_device_nif},
     {"device_info",     1, device_info_nif},
     {"config_locked",   1, config_locked_nif},
     {"data_locked",     1, data_locked_nif},
@@ -461,4 +516,4 @@ static ErlNifFunc nif_funcs[] = {
     {"read_comp_cert",  2, read_comp_cert_nif},
 };
 
-ERL_NIF_INIT(grisp_cryptoauth_nif, nif_funcs, NULL, NULL, NULL, NULL);
+ERL_NIF_INIT(grisp_cryptoauth_nif, nif_funcs, &load, NULL, NULL, NULL);
