@@ -65,6 +65,11 @@ sig_alg() ->
     #'SignatureAlgorithm'{algorithm = ?'ecdsa-with-SHA256'}.
 
 
+validity(TS, no_expiration) ->
+    #'Validity'{
+        notBefore = ts_to_utc_or_general_time(TS),
+        notAfter =  ?MAX_NOT_AFTER
+    };
 validity(TS, Years) ->
     #'Validity'{
         notBefore = ts_to_utc_or_general_time(TS),

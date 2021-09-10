@@ -8,7 +8,7 @@
 test() ->
     IssuerCert = grisp_cryptoauth_cert:decode_pem(
                    grisp_cryptoauth_known_certs:test_intermediate()),
-    IssueDateInfo = {{{2021,9,1}, {0,0,0}}, 5},
+    IssueDateInfo = {{{2021,9,1}, {0,0,0}}, no_expiration},
     Serial = 1,
     Subject = {rdnSequence, [[
         #'AttributeTypeAndValue'{
