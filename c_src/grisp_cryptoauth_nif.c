@@ -3,7 +3,7 @@
 #include "atcacert/atcacert_client.h"
 
 
-ATCAIfaceCfg grisp_atcab_default_config = {
+static ATCAIfaceCfg grisp_atcab_default_config = {
     .iface_type                 = ATCA_I2C_IFACE,
     .devtype                    = ATECC608,
     {
