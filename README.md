@@ -22,7 +22,8 @@ This library follows the ATECC608B-TFLXTLS configuration, that means in particul
 * one unchangable primary private key
 * three changable secondary private keys
 * sign and verify operations on the keys above
-* two changable slots for compressed certificates (see below)
+* two (primary and secondary) changable slots for compressed certificates
+* possibility to lock slots if you really want to
 
 More to come :).
 
