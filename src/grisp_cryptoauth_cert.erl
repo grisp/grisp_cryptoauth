@@ -18,7 +18,7 @@
          ext_subjkeyid/1,
          ext_keyusage/1,
          ext_extkeyusage/1,
-         ext_is_ca/1]).
+         ext_isCa/1]).
 
 %% Testing
 -export([compress_sig/1, decompress_sig/1,
@@ -121,7 +121,7 @@ ext_extkeyusage(server) ->
        extnValue = [?'id-kp-serverAuth']}.
 
 
-ext_is_ca(IsCA) ->
+ext_isCa(IsCA) ->
     #'Extension'{
        extnID = ?'id-ce-basicConstraints',
        extnValue = #'BasicConstraints'{cA = IsCA}}.
