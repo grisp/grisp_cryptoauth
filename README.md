@@ -1,12 +1,30 @@
 grisp_cryptoauth
 ================
 
-Secure Element support for GRiSP2 based on cryptoauthlib.
+Secure Element (Microchip ATECC608B) support for GRiSP2 based on cryptoauthlib.
 
 Build
 -----
 
-This is meant to be build within the GRiSP2 toolchain.
+This is meant to be build within the GRiSP2 toolchain or on a linux distribution
+with cryptoauthlib installed.
+
+```
+rebar3 compile
+```
+
+
+Support
+-------
+
+This library follows the ATECC608B-TFLXTLS configuration, that means in particular:
+
+* one unchangable primary private key
+* three changable secondary private keys
+* sign and verify operations on the keys above
+* two changable slots for compressed certificates (see below)
+
+More to come :).
 
 
 Writing Certificates
