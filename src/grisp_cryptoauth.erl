@@ -3,27 +3,14 @@
 %% Main API
 -export([init/0,
          init/1,
-         sign/2,
          sign/3,
-         verify/3,
          verify/4,
-         public_key/1,
          public_key/2,
-         refresh/1,
-         refresh/2,
-         setup/1,
-         check_device/0,
-         check_device/1,
-         device_info/0,
-         device_info/1,
-         read_cert/2,
+         refresh_key/2,
          read_cert/3,
-         write_cert/3,
          write_cert/4,
-         read_comp_cert/1,
-         read_comp_cert/2,
-         write_comp_cert/2,
-         write_comp_cert/3]).
+         device_info/1,
+         setup_device/1]).
 
 
 -include_lib("public_key/include/public_key.hrl").
@@ -33,7 +20,8 @@
 -define(SECONDARY_PRIVATE_KEY_1, 2).
 -define(SECONDARY_PRIVATE_KEY_2, 3).
 -define(SECONDARY_PRIVATE_KEY_3, 4).
--define(DEVICE_CERT, 10).
+-define(PRIMARY_CERT, 10).
+-define(SECONDARY_CERT, 12).
 -define(DEFAULT_TEMPLATES, [{{0, 0}, test}]).
 
 -define(APP, grisp_cryptoauth).
@@ -58,61 +46,50 @@ init(Config) ->
     grisp_cryptoauth_nif:init_device(BuiltConfig).
 
 
-sign(PrivKey, Msg) ->
-    sign(PrivKey, Msg, #{}).
-
-sign(primary, Msg, Config) ->
-    do_sign(?PRIMARY_PRIVATE_KEY, Msg, Config);
-sign(secondary_1, Msg, Config) ->
-    do_sign(?SECONDARY_PRIVATE_KEY_1, Msg, Config);
-sign(secondary_2, Msg, Config) ->
-    do_sign(?SECONDARY_PRIVATE_KEY_2, Msg, Config);
-sign(secondary_3, Msg, Config) ->
-    do_sign(?SECONDARY_PRIVATE_KEY_3, Msg, Config).
+sign(Context, primary, Msg) ->
+    do_sign(Context, ?PRIMARY_PRIVATE_KEY, Msg);
+sign(Context, secondary_1, Msg) ->
+    do_sign(Context, ?SECONDARY_PRIVATE_KEY_1, Msg);
+sign(Context, secondary_2, Msg) ->
+    do_sign(Context, ?SECONDARY_PRIVATE_KEY_2, Msg);
+sign(Context, secondary_3, Msg) ->
+    do_sign(Context, ?SECONDARY_PRIVATE_KEY_3, Msg).
 
 
-verify(PubKey, Msg, Sig) ->
-    verify(PubKey, Msg, Sig, #{}).
-
-verify(primary, Msg, Sig, Config) ->
-    do_verify(?PRIMARY_PRIVATE_KEY, Msg, Sig, Config);
-verify(secondary_1, Msg, Sig, Config) ->
-    do_verify(?SECONDARY_PRIVATE_KEY_1, Msg, Sig, Config);
-verify(secondary_2, Msg, Sig, Config) ->
-    do_verify(?SECONDARY_PRIVATE_KEY_2, Msg, Sig, Config);
-verify(secondary_3, Msg, Sig, Config) ->
-    do_verify(?SECONDARY_PRIVATE_KEY_3, Msg, Sig, Config);
-verify(PubKey, Msg, Sig, Config) when is_binary(PubKey) or is_list(PubKey) ->
-    do_verify(PubKey, Msg, Sig, Config).
-
-public_key(PubKey) ->
-    public_key(PubKey, #{}).
-
-public_key(primary, Config) ->
-    do_public_key(?PRIMARY_PRIVATE_KEY, Config);
-public_key(secondary_1, Config) ->
-    do_public_key(?SECONDARY_PRIVATE_KEY_1, Config);
-public_key(secondary_2, Config) ->
-    do_public_key(?SECONDARY_PRIVATE_KEY_2, Config);
-public_key(secondary_3, Config) ->
-    do_public_key(?SECONDARY_PRIVATE_KEY_3, Config).
-
-refresh(PrivKey) ->
-    refresh(PrivKey, #{}).
-
-refresh(secondary_1, Config) ->
-    do_refresh(?SECONDARY_PRIVATE_KEY_1, Config);
-refresh(secondary_2, Config) ->
-    do_refresh(?SECONDARY_PRIVATE_KEY_2, Config);
-refresh(secondary_3, Config) ->
-    do_refresh(?SECONDARY_PRIVATE_KEY_3, Config).
+verify(Context, primary, Msg, Sig) ->
+    do_verify(Context, ?PRIMARY_PRIVATE_KEY, Msg, Sig);
+verify(Context, secondary_1, Msg, Sig) ->
+    do_verify(Context, ?SECONDARY_PRIVATE_KEY_1, Msg, Sig);
+verify(Context, secondary_2, Msg, Sig) ->
+    do_verify(Context, ?SECONDARY_PRIVATE_KEY_2, Msg, Sig);
+verify(Context, secondary_3, Msg, Sig) ->
+    do_verify(Context, ?SECONDARY_PRIVATE_KEY_3, Msg, Sig);
+verify(Context, PubKey, Msg, Sig) when is_binary(PubKey) or is_list(PubKey) ->
+    do_verify(Context, PubKey, Msg, Sig).
 
 
-setup(Config) ->
-    BuiltConfig = build_config(Config),
-    case grisp_cryptoauth_nif:config_locked(BuiltConfig) of
+public_key(Context, primary) ->
+    do_public_key(Context, ?PRIMARY_PRIVATE_KEY);
+public_key(Context, secondary_1) ->
+    do_public_key(Context, ?SECONDARY_PRIVATE_KEY_1);
+public_key(Context, secondary_2) ->
+    do_public_key(Context, ?SECONDARY_PRIVATE_KEY_2);
+public_key(Context, secondary_3) ->
+    do_public_key(Context, ?SECONDARY_PRIVATE_KEY_3).
+
+
+refresh_key(Context, secondary_1) ->
+    do_refresh_key(Context, ?SECONDARY_PRIVATE_KEY_1);
+refresh_key(Context, secondary_2) ->
+    do_refresh_key(Context, ?SECONDARY_PRIVATE_KEY_2);
+refresh_key(Context, secondary_3) ->
+    do_refresh_key(Context, ?SECONDARY_PRIVATE_KEY_3).
+
+
+setup_device(Context) ->
+    case grisp_cryptoauth_nif:config_locked(Context) of
         {ok, false} ->
-            do_setup(BuiltConfig);
+            do_setup_device(Context);
         {ok, true} ->
             {error, config_locked};
         Error ->
@@ -120,42 +97,16 @@ setup(Config) ->
     end.
 
 
-check_device() ->
-    check_device(#{}).
-
-check_device(Config) ->
-    case grisp_cryptoauth_nif:device_info(Config) of
-        {ok, DeviceType} ->
-            case lists:member(DeviceType, ?VALID_DEVICES) of
-                true ->
-                    ok;
-                false ->
-                    {error, invalid_device}
-            end;
-        Error ->
-            Error
-    end.
+device_info(Context) ->
+    io:format("~s", [generate_device_info(Context)]).
 
 
-device_info() ->
-    device_info(#{}).
-
-device_info(Config) ->
-    BuiltConfig = build_config(Config),
-    case check_device(BuiltConfig) of
-        ok ->
-            Info = generate_device_info(BuiltConfig),
-            io:format("~s", [Info]);
-        Error ->
-            Error
-    end.
-
-
-read_cert(Type, DerOrPlain) ->
-    read_cert(Type, DerOrPlain, #{}).
-
-read_cert(device, DerOrPlain, Config) ->
-    {ok, CompCert} = read_comp_cert(?DEVICE_CERT, Config),
+read_cert(Context, primary, DerOrPlain) ->
+    read_cert(Context, ?PRIMARY_CERT, DerOrPlain);
+read_cert(Context, secondary, DerOrPlain) ->
+    read_cert(Context, ?SECONDARY_CERT, DerOrPlain);
+read_cert(Context, Slot, DerOrPlain) when is_integer(Slot) ->
+    {ok, CompCert} = grisp_cryptoauth_nif:read_comp_cert(Context, Slot),
     <<TemplateId:4, ChainId:4>> = <<(binary:at(CompCert, 69))>>,
     Templates = application:get_env(grisp_cryptoauth, templates, ?DEFAULT_TEMPLATES),
     case lists:keyfind({TemplateId, ChainId}, 1, Templates) of
@@ -178,32 +129,19 @@ read_cert(device, DerOrPlain, Config) ->
     end.
 
 
-write_cert(Type, TBSFunName, Cert) ->
-    write_cert(Type, TBSFunName, Cert, #{}).
-
-write_cert(device, TBSFunName, Cert, Config) ->
+write_cert(Context, primary, TBSFunName, Cert) ->
+    write_cert(Context, ?PRIMARY_CERT, TBSFunName, Cert);
+write_cert(Context, secondary, TBSFunName, Cert) ->
+    write_cert(Context, ?SECONDARY_CERT, TBSFunName, Cert);
+write_cert(Context, Slot, TBSFunName, Cert) when is_integer(Slot) ->
     Templates = application:get_env(grisp_cryptoauth, templates, ?DEFAULT_TEMPLATES),
     case lists:keyfind(TBSFunName, 2, Templates) of
         false ->
             {error, {undefined, TBSFunName}};
         {{TemplateId, ChainId}, _} ->
             CompCert = grisp_cryptoauth_cert:compress(Cert, TemplateId, ChainId),
-            write_comp_cert(?DEVICE_CERT, CompCert, Config)
+            grisp_cryptoauth_nif:write_comp_cert(Context, Slot, CompCert)
     end.
-
-
-read_comp_cert(Slot) ->
-    read_comp_cert(Slot, #{}).
-
-read_comp_cert(Slot, Config) ->
-    grisp_cryptoauth_nif:read_comp_cert(build_config(Config), Slot).
-
-
-write_comp_cert(Slot, CompCert) ->
-    write_comp_cert(Slot, CompCert, #{}).
-
-write_comp_cert(Slot, CompCert, Config) ->
-    grisp_cryptoauth_nif:write_comp_cert(build_config(Config), Slot, CompCert).
 
 
 %% ---------------
@@ -230,42 +168,41 @@ build_config(Config) ->
 %% Helpers
 %% ---------------
 
-do_sign(SlotIdx, Msg, Config) ->
-    grisp_cryptoauth_nif:sign(build_config(Config), SlotIdx, crypto:hash(sha256, Msg)).
+do_sign(Context, SlotIdx, Msg) ->
+    grisp_cryptoauth_nif:sign(Context, SlotIdx, crypto:hash(sha256, Msg)).
 
-do_verify(PubKey, Msg, Sig, Config) when is_list(PubKey) ->
-    do_verify(binary:list_to_bin(PubKey), Msg, Sig, Config);
-do_verify(PubKey, Msg, Sig, Config) when is_binary(PubKey) ->
-    grisp_cryptoauth_nif:verify_extern(build_config(Config), PubKey, crypto:hash(sha256, Msg), Sig);
-do_verify(SlotIdx, Msg, Sig, Config) when is_integer(SlotIdx) ->
-    BuiltConfig = build_config(Config),
-    case grisp_cryptoauth_nif:gen_public_key(BuiltConfig, SlotIdx) of
+do_verify(Context, PubKey, Msg, Sig) when is_list(PubKey) ->
+    do_verify(Context, binary:list_to_bin(PubKey), Msg, Sig);
+do_verify(Context, PubKey, Msg, Sig) when is_binary(PubKey) ->
+    grisp_cryptoauth_nif:verify_extern(Context, PubKey, crypto:hash(sha256, Msg), Sig);
+do_verify(Context, SlotIdx, Msg, Sig) when is_integer(SlotIdx) ->
+    case grisp_cryptoauth_nif:gen_public_key(Context, SlotIdx) of
         {ok, PubKey} ->
-            grisp_cryptoauth_nif:verify_extern(BuiltConfig, PubKey, crypto:hash(sha256, Msg), Sig);
+            grisp_cryptoauth_nif:verify_extern(Context, PubKey, crypto:hash(sha256, Msg), Sig);
         Error ->
             Error
     end.
 
-do_public_key(SlotIdx, Config) ->
-    {ok, PubKey} = grisp_cryptoauth_nif:gen_public_key(build_config(Config), SlotIdx),
+do_public_key(Context, SlotIdx) ->
+    {ok, PubKey} = grisp_cryptoauth_nif:gen_public_key(Context, SlotIdx),
     <<16#04, PubKey:64/binary>>.
 
-do_refresh(SlotIdx, Config) ->
-    grisp_cryptoauth_nif:gen_private_key(build_config(Config), SlotIdx).
+do_refresh_key(Context, SlotIdx) ->
+    grisp_cryptoauth_nif:gen_private_key(Context, SlotIdx).
 
-do_setup(Config) ->
-    grisp_cryptoauth_nif:write_config(Config),
-    grisp_cryptoauth_nif:lock_config(Config),
+do_setup_device(Context) ->
+    grisp_cryptoauth_nif:write_config(Context),
+    grisp_cryptoauth_nif:lock_config(Context),
     PrivKeys = [?PRIMARY_PRIVATE_KEY, ?SECONDARY_PRIVATE_KEY_1, ?SECONDARY_PRIVATE_KEY_2, ?SECONDARY_PRIVATE_KEY_3],
-    [grisp_cryptoauth_nif:gen_private_key(Config, SlotIdx) || SlotIdx <- PrivKeys],
-    grisp_cryptoauth_nif:lock_data(Config),
+    [grisp_cryptoauth_nif:gen_private_key(Context, SlotIdx) || SlotIdx <- PrivKeys],
+    grisp_cryptoauth_nif:lock_data(Context),
     ok.
 
-generate_device_info(Config) ->
-    {ok, DeviceType} = grisp_cryptoauth_nif:device_info(Config),
-    {ok, SerialNumber} = grisp_cryptoauth_nif:serial_number(Config),
-    {ok, IsConfigLocked} = grisp_cryptoauth_nif:config_locked(Config),
-    {ok, IsDataLocked} = grisp_cryptoauth_nif:data_locked(Config),
+generate_device_info(Context) ->
+    {ok, DeviceType} = grisp_cryptoauth_nif:device_info(Context),
+    {ok, SerialNumber} = grisp_cryptoauth_nif:serial_number(Context),
+    {ok, IsConfigLocked} = grisp_cryptoauth_nif:config_locked(Context),
+    {ok, IsDataLocked} = grisp_cryptoauth_nif:data_locked(Context),
     Header = "GRiSP2 Secure Element",
     Sep = "=====================",
     DeviceTypeText = ["Type: ", atom_to_binary(DeviceType, latin1)],

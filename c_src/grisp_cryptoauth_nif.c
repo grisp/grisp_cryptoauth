@@ -110,12 +110,6 @@ static const uint8_t grisp_device_default_config[] = {
 /* Execute atcab_* functions */
 #define EXEC_CA_FUN(fun, args...) EXEC_CA_FUN_STATUS(UNIQ_CA_STATUS, fun, args)
 
-/* Init device, call before other API calls */
-#define INIT_CA_FUN \
-    ATCAIfaceCfg ATCAB_CONFIG = grisp_atcab_default_config; \
-    build_atcab_config(env, &ATCAB_CONFIG, argv[0]); \
-    EXEC_CA_FUN(atcab_init, &ATCAB_CONFIG) \
-
 /* Init device context */
 #define INIT_DEVICE \
     struct device_context_t *DEVICE_CONTEXT; \
@@ -224,9 +218,9 @@ static ERL_NIF_TERM init_device_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 
 static ERL_NIF_TERM device_info_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    INIT_CA_FUN;
+    INIT_DEVICE;
 
-    ATCADeviceType dt = atcab_get_device_type();
+    ATCADeviceType dt = atcab_get_device_type_ext(DEVICE);
 
     if (dt == ATECC508A)
         return MK_SUCCESS_ATOM(env, "ATECC508A");
@@ -251,10 +245,10 @@ static ERL_NIF_TERM config_locked_nif(ErlNifEnv* env, int argc, const ERL_NIF_TE
 
 static ERL_NIF_TERM data_locked_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    INIT_CA_FUN;
+    INIT_DEVICE;
 
     bool is_locked = false;
-    EXEC_CA_FUN(atcab_is_data_locked, &is_locked);
+    EXEC_CA_FUN(calib_is_locked, DEVICE, LOCK_ZONE_DATA, &is_locked);
 
     return MK_SUCCESS_ATOM(env, is_locked ? "true" : "false");
 }
@@ -262,7 +256,7 @@ static ERL_NIF_TERM data_locked_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 
 static ERL_NIF_TERM slot_locked_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    INIT_CA_FUN;
+    INIT_DEVICE;
 
     int slot_idx;
     bool is_locked = false;
@@ -270,7 +264,7 @@ static ERL_NIF_TERM slot_locked_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM
     if (!enif_get_int(env, argv[1], &slot_idx))
 	    return enif_make_badarg(env);
 
-    EXEC_CA_FUN(atcab_is_slot_locked, (uint16_t) slot_idx, &is_locked);
+    EXEC_CA_FUN(calib_is_slot_locked, DEVICE, (uint16_t) slot_idx, &is_locked);
 
     return MK_SUCCESS_ATOM(env, is_locked ? "true" : "false");
 }
@@ -278,10 +272,10 @@ static ERL_NIF_TERM slot_locked_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 
 static ERL_NIF_TERM serial_number_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    INIT_CA_FUN;
+    INIT_DEVICE;
 
     uint8_t sn[9];
-    EXEC_CA_FUN(atcab_read_serial_number, sn);
+    EXEC_CA_FUN(calib_read_serial_number, DEVICE, sn);
 
     ERL_NIF_TERM bin_sn;
     BINARY_FROM_RAW(env, bin_sn, sn, 9);
@@ -291,10 +285,10 @@ static ERL_NIF_TERM serial_number_nif(ErlNifEnv* env, int argc, const ERL_NIF_TE
 
 static ERL_NIF_TERM read_config_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    INIT_CA_FUN;
+    INIT_DEVICE;
 
     uint8_t config_zone[ATCA_ECC_CONFIG_SIZE];
-    EXEC_CA_FUN(atcab_read_config_zone, config_zone);
+    EXEC_CA_FUN(calib_read_config_zone, DEVICE, config_zone);
 
     ERL_NIF_TERM bin_config_zone;
     BINARY_FROM_RAW(env, bin_config_zone, config_zone, ATCA_ECC_CONFIG_SIZE);
@@ -305,9 +299,9 @@ static ERL_NIF_TERM read_config_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 
 static ERL_NIF_TERM write_config_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    INIT_CA_FUN;
+    INIT_DEVICE;
 
-    EXEC_CA_FUN(atcab_write_config_zone, grisp_device_default_config);
+    EXEC_CA_FUN(calib_write_config_zone, DEVICE, grisp_device_default_config);
 
     return MK_OK(env);
 }
@@ -315,9 +309,9 @@ static ERL_NIF_TERM write_config_nif(ErlNifEnv* env, int argc, const ERL_NIF_TER
 
 static ERL_NIF_TERM lock_config_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    INIT_CA_FUN;
+    INIT_DEVICE;
 
-    EXEC_CA_FUN(atcab_lock_config_zone);
+    EXEC_CA_FUN(calib_lock_config_zone, DEVICE);
 
     return MK_OK(env);
 }
@@ -325,9 +319,9 @@ static ERL_NIF_TERM lock_config_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 
 static ERL_NIF_TERM lock_data_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    INIT_CA_FUN;
+    INIT_DEVICE;
 
-    EXEC_CA_FUN(atcab_lock_data_zone);
+    EXEC_CA_FUN(calib_lock_data_zone, DEVICE);
 
     return MK_OK(env);
 }
@@ -335,14 +329,14 @@ static ERL_NIF_TERM lock_data_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM a
 
 static ERL_NIF_TERM lock_slot_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    INIT_CA_FUN;
+    INIT_DEVICE;
 
     int slot_idx;
 
     if (!enif_get_int(env, argv[1], &slot_idx))
 	    return enif_make_badarg(env);
 
-    EXEC_CA_FUN(atcab_lock_data_slot, (uint16_t) slot_idx);
+    EXEC_CA_FUN(calib_lock_data_slot, DEVICE, (uint16_t) slot_idx);
 
     return MK_OK(env);
 }
@@ -350,7 +344,7 @@ static ERL_NIF_TERM lock_slot_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM a
 
 static ERL_NIF_TERM gen_private_key_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    INIT_CA_FUN;
+    INIT_DEVICE;
 
     int slot_idx;
 
@@ -358,7 +352,7 @@ static ERL_NIF_TERM gen_private_key_nif(ErlNifEnv* env, int argc, const ERL_NIF_
 	    return enif_make_badarg(env);
 
     uint8_t pubkey[ATCA_ECCP256_PUBKEY_SIZE];
-    EXEC_CA_FUN(atcab_genkey, (uint16_t) slot_idx, pubkey);
+    EXEC_CA_FUN(calib_genkey, DEVICE, (uint16_t) slot_idx, pubkey);
 
     ERL_NIF_TERM bin_pubkey;
     BINARY_FROM_RAW(env, bin_pubkey, pubkey, ATCA_ECCP256_PUBKEY_SIZE);
@@ -369,7 +363,7 @@ static ERL_NIF_TERM gen_private_key_nif(ErlNifEnv* env, int argc, const ERL_NIF_
 
 static ERL_NIF_TERM gen_public_key_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    INIT_CA_FUN;
+    INIT_DEVICE;
 
     int slot_idx;
 
@@ -377,7 +371,7 @@ static ERL_NIF_TERM gen_public_key_nif(ErlNifEnv* env, int argc, const ERL_NIF_T
 	    return enif_make_badarg(env);
 
     uint8_t pubkey[ATCA_ECCP256_PUBKEY_SIZE];
-    EXEC_CA_FUN(atcab_get_pubkey, (uint16_t) slot_idx, pubkey);
+    EXEC_CA_FUN(atcab_get_pubkey_ext, DEVICE, (uint16_t) slot_idx, pubkey);
 
     ERL_NIF_TERM bin_pubkey;
     BINARY_FROM_RAW(env, bin_pubkey, pubkey, ATCA_ECCP256_PUBKEY_SIZE);
@@ -388,7 +382,7 @@ static ERL_NIF_TERM gen_public_key_nif(ErlNifEnv* env, int argc, const ERL_NIF_T
 
 static ERL_NIF_TERM sign_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    INIT_CA_FUN;
+    INIT_DEVICE;
 
     int slot_idx;
     ErlNifBinary bin_msg;
@@ -400,7 +394,7 @@ static ERL_NIF_TERM sign_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]
         return enif_make_badarg(env);
 
     uint8_t sig[ATCA_ECCP256_SIG_SIZE];
-    EXEC_CA_FUN(atcab_sign, (uint16_t) slot_idx, (uint8_t *) bin_msg.data, sig);
+    EXEC_CA_FUN(atcab_sign_ext, DEVICE, (uint16_t) slot_idx, (uint8_t *) bin_msg.data, sig);
 
     ERL_NIF_TERM bin_sig;
     BINARY_FROM_RAW(env, bin_sig, sig, ATCA_ECCP256_SIG_SIZE);
@@ -411,7 +405,7 @@ static ERL_NIF_TERM sign_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]
 
 static ERL_NIF_TERM verify_extern_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    INIT_CA_FUN;
+    INIT_DEVICE;
 
     ErlNifBinary bin_pubkey;
     ErlNifBinary bin_msg;
@@ -427,7 +421,8 @@ static ERL_NIF_TERM verify_extern_nif(ErlNifEnv* env, int argc, const ERL_NIF_TE
         return enif_make_badarg(env);
 
     bool is_verified;
-    EXEC_CA_FUN(atcab_verify_extern, (uint8_t *) bin_msg.data, (uint8_t *) bin_sig.data, (uint8_t *) bin_pubkey.data, &is_verified);
+    EXEC_CA_FUN(atcab_verify_extern_ext, DEVICE, (uint8_t *) bin_msg.data,
+                (uint8_t *) bin_sig.data, (uint8_t *) bin_pubkey.data, &is_verified);
 
     return MK_SUCCESS_ATOM(env, is_verified ? "true" : "false");
 }
@@ -435,7 +430,7 @@ static ERL_NIF_TERM verify_extern_nif(ErlNifEnv* env, int argc, const ERL_NIF_TE
 
 static ERL_NIF_TERM verify_stored_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    INIT_CA_FUN;
+    INIT_DEVICE;
 
     int slot_idx;
     ErlNifBinary bin_msg;
@@ -451,7 +446,8 @@ static ERL_NIF_TERM verify_stored_nif(ErlNifEnv* env, int argc, const ERL_NIF_TE
         return enif_make_badarg(env);
 
     bool is_verified;
-    EXEC_CA_FUN(atcab_verify_stored, (uint8_t *) bin_msg.data, (uint8_t *) bin_sig.data, (uint16_t) slot_idx, &is_verified);
+    EXEC_CA_FUN(atcab_verify_stored_ext, DEVICE, (uint8_t *) bin_msg.data,
+                (uint8_t *) bin_sig.data, (uint16_t) slot_idx, &is_verified);
 
     return MK_SUCCESS_ATOM(env, is_verified ? "true" : "false");
 }
@@ -459,7 +455,7 @@ static ERL_NIF_TERM verify_stored_nif(ErlNifEnv* env, int argc, const ERL_NIF_TE
 
 static ERL_NIF_TERM write_comp_cert_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    INIT_CA_FUN;
+    INIT_DEVICE;
 
     int slot_idx;
     ErlNifBinary bin_cert;
@@ -470,7 +466,8 @@ static ERL_NIF_TERM write_comp_cert_nif(ErlNifEnv* env, int argc, const ERL_NIF_
     if (!enif_inspect_binary(env, argv[2], &bin_cert) || bin_cert.size != 72)
         return enif_make_badarg(env);
 
-    EXEC_CA_FUN(atcab_write_bytes_zone, ATCA_ZONE_DATA, (uint16_t) slot_idx, 0, (uint8_t *) bin_cert.data, bin_cert.size);
+    EXEC_CA_FUN(calib_write_bytes_zone, DEVICE, ATCA_ZONE_DATA, (uint16_t) slot_idx, 0,
+                (uint8_t *) bin_cert.data, bin_cert.size);
 
     return MK_OK(env);
 }
@@ -478,7 +475,7 @@ static ERL_NIF_TERM write_comp_cert_nif(ErlNifEnv* env, int argc, const ERL_NIF_
 
 static ERL_NIF_TERM read_comp_cert_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    INIT_CA_FUN;
+    INIT_DEVICE;
 
     int slot_idx;
 
@@ -486,7 +483,8 @@ static ERL_NIF_TERM read_comp_cert_nif(ErlNifEnv* env, int argc, const ERL_NIF_T
 	    return enif_make_badarg(env);
 
     uint8_t comp_cert[72];
-    EXEC_CA_FUN(atcab_read_bytes_zone, ATCA_ZONE_DATA, (uint16_t) slot_idx, 0, (uint8_t *) comp_cert, 72);
+    EXEC_CA_FUN(calib_read_bytes_zone, DEVICE, ATCA_ZONE_DATA, (uint16_t) slot_idx, 0,
+                (uint8_t *) comp_cert, 72);
 
     ERL_NIF_TERM bin_comp_cert;
     BINARY_FROM_RAW(env, bin_comp_cert, comp_cert, 72);

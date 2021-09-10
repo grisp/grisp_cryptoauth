@@ -34,7 +34,7 @@ test() ->
     #'OTPTBSCertificate'{
         version = v3,
         serialNumber = 1,
-        signature = grisp_cryptoauth_cert:sigAlg(),
+        signature = grisp_cryptoauth_cert:sig_alg(),
         issuer = IssuerCertTBS#'OTPTBSCertificate'.subject,
         validity = grisp_cryptoauth_cert:validity(IssueDate, ExpireYears),
         subject = {rdnSequence, [[

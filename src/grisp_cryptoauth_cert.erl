@@ -12,7 +12,7 @@
          print/1,
          add_years/2,
          subjPubKeyInfo/1,
-         sigAlg/0,
+         sig_alg/0,
          validity/2,
          ext_authkeyid/1,
          ext_subjkeyid/1,
@@ -61,7 +61,7 @@ sign(Fun, SignFunOrPrivateKey) when is_atom(Fun) ->
     sign(grisp_cryptoauth_template:Fun(), SignFunOrPrivateKey).
 
 
-sigAlg() ->
+sig_alg() ->
     #'SignatureAlgorithm'{algorithm = ?'ecdsa-with-SHA256'}.
 
 
@@ -170,7 +170,7 @@ decompress(TBS, <<CompSig:64/binary, CompDate:3/binary, _:5/binary>>) ->
     Sig = decompress_sig(CompSig),
     #'OTPCertificate'{
         tbsCertificate = TBS#'OTPTBSCertificate'{validity = Validity},
-        signatureAlgorithm = sigAlg(),
+        signatureAlgorithm = sig_alg(),
         signature = Sig
     }.
 
