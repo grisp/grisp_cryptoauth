@@ -30,7 +30,12 @@
          calc_expire_years/1]).
 
 -define(MAX_NOT_AFTER, {generalTime, "99991231235959Z"}).
--define('id-stritzinger-grispMeta', {1,3,6,1,4,1,4849,1}).
+-define('id-stritzinger-grispMeta',         {1,3,6,1,4,1,4849,0}).
+-define('id-stritzinger-grispVersion',      {1,3,6,1,4,1,4849,1}).
+-define('id-stritzinger-grispSerial',       {1,3,6,1,4,1,4849,2}).
+-define('id-stritzinger-grispPcbVersion',   {1,3,6,1,4,1,4849,3}).
+-define('id-stritzinger-grispBatch',        {1,3,6,1,4,1,4849,4}).
+-define('id-stritzinger-grispProdDate',     {1,3,6,1,4,1,4849,5}).
 
 
 decode_pem_file(FilePath) ->
@@ -99,14 +104,19 @@ build_standard_ext(ExtList) ->
 
 
 build_grisp_ext(GrispMeta) ->
-    {T1,V1} = der_encode_IA5String(element(2, lists:keyfind(grisp_version, 1, GrispMeta))),
-    {T2,V2} = der_encode_Integer(element(2, lists:keyfind(grisp_serial, 1, GrispMeta))),
-    {T3,V3} = der_encode_IA5String(element(2, lists:keyfind(grisp_pcb_version, 1, GrispMeta))),
-    {T4,V4} = der_encode_Integer(element(2, lists:keyfind(grisp_batch, 1, GrispMeta))),
-    {T5,V5} = der_encode_GeneralizedTime(element(2, lists:keyfind(grisp_prod_date, 1, GrispMeta))),
-    ToBeEncoded = [{T1,V1}, {T2,V2}, {T3,V3}, {T4,V4}, {T5,V5}],
-    %% Encode all GRiSP meta data in a Sequence
-    DER = asn1rt_nif:encode_ber_tlv({16, ToBeEncoded}),
+    %% Encode all GRiSP meta data as a 'map', e.g. a
+    %% Sequence of Sequences of length 2 (for key and value)
+    DER = asn1rt_nif:encode_ber_tlv({16,
+        [{16, [der_encode_ObjectIdentifier(?'id-stritzinger-grispVersion'),
+               der_encode_IA5String(element(2, lists:keyfind(grisp_version, 1, GrispMeta)))]},
+         {16, [der_encode_ObjectIdentifier(?'id-stritzinger-grispSerial'),
+               der_encode_Integer(element(2, lists:keyfind(grisp_serial, 1, GrispMeta)))]},
+         {16, [der_encode_ObjectIdentifier(?'id-stritzinger-grispPcbVersion'),
+               der_encode_IA5String(element(2, lists:keyfind(grisp_pcb_version, 1, GrispMeta)))]},
+         {16, [der_encode_ObjectIdentifier(?'id-stritzinger-grispBatch'),
+               der_encode_Integer(element(2, lists:keyfind(grisp_batch, 1, GrispMeta)))]},
+         {16, [der_encode_ObjectIdentifier(?'id-stritzinger-grispProdDate'),
+               der_encode_GeneralizedTime(element(2, lists:keyfind(grisp_prod_date, 1, GrispMeta)))]}]}),
     #'Extension'{
        extnID = ?'id-stritzinger-grispMeta',
        extnValue = DER}.
@@ -216,6 +226,13 @@ der_encode_GeneralizedTime({{Year, Month, Day}, _}) ->
 der_encode_IA5String(String) ->
     <<T:8, _L:8, V/binary>> =
         element(2, 'OTP-PUB-KEY':encode('EmailAddress', String)),
+    {T, V}.
+
+
+%% CertPolicyId is derived from ObjectIdentifier
+der_encode_ObjectIdentifier(Id) ->
+    <<T:8, _L:8, V/binary>> =
+        element(2, 'OTP-PUB-KEY':encode('CertPolicyId', Id)),
     {T, V}.
 
 
