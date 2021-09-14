@@ -2,10 +2,10 @@
 
 -include_lib("public_key/include/public_key.hrl").
 
--export([tls_client/5]).
+-export([tls_client/6]).
 
 
-tls_client(IssuerCert, {IssueDate, ExpireYears}, Serial, Subject, DERPubKey) ->
+tls_client(IssuerCert, {IssueDate, ExpireYears}, Serial, Subject, DERPubKey, GrispMeta) ->
     IssuerCertTBS = IssuerCert#'OTPCertificate'.tbsCertificate,
     #'OTPTBSCertificate'{
         version = v3,
@@ -21,5 +21,5 @@ tls_client(IssuerCert, {IssueDate, ExpireYears}, Serial, Subject, DERPubKey) ->
             grisp_cryptoauth_cert:ext_authkeyid(IssuerCert),
             grisp_cryptoauth_cert:ext_keyusage([digitalSignature, keyAgreement]),
             grisp_cryptoauth_cert:ext_extkeyusage(client)
-        ]
+        ] ++ grisp_cryptoauth_cert:build_grisp_ext(GrispMeta)
     }.

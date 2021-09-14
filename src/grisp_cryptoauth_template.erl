@@ -21,5 +21,11 @@ test() ->
                   215,77,227,214,133,58,247,44,163,184,81,162,36,49,11,17,252,
                   217,155,174,8,195,223,167,142,153,71,156,107,48,216,101,15,
                   161>>,
+    GrispMeta = [
+        {ext_grispVersion, "2"},
+        {ext_grispSerial, Serial},
+        {ext_grispPcbVersion, "1.2"},
+        {ext_grispBatch, 1},
+        {ext_grispProdDate, {{2021,10,1}, {0,0,0}}}],
     grisp_cryptoauth_profile:tls_client(IssuerCert, IssueDateInfo, Serial,
-                                        Subject, DERPubKey).
+                                        Subject, DERPubKey, GrispMeta).

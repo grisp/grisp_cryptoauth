@@ -18,14 +18,27 @@
          ext_subjkeyid/1,
          ext_keyusage/1,
          ext_extkeyusage/1,
-         ext_isCa/1]).
+         ext_isCa/1,
+         build_grisp_ext/1]).
 
 %% Testing
--export([compress_sig/1, decompress_sig/1,
-         compress_date/1, decompress_date/1,
+-export([compress_sig/1,
+         decompress_sig/1,
+         compress_date/1,
+         decompress_date/1,
+         ext_grispVersion/1,
+         ext_grispSerial/1,
+         ext_grispPcbVersion/1,
+         ext_grispBatch/1,
+         ext_grispProdDate/1,
          calc_expire_years/1]).
 
 -define(MAX_NOT_AFTER, {generalTime, "99991231235959Z"}).
+-define('id-stritzinger-grispVersion', {1,3,6,1,4,1,4849,1}).
+-define('id-stritzinger-grispSerial', {1,3,6,1,4,1,4849,2}).
+-define('id-stritzinger-grispPcbVersion', {1,3,6,1,4,1,4849,3}).
+-define('id-stritzinger-grispBatch', {1,3,6,1,4,1,4849,4}).
+-define('id-stritzinger-grispProdDate', {1,3,6,1,4,1,4849,5}).
 
 
 decode_pem_file(FilePath) ->
@@ -131,6 +144,10 @@ ext_isCa(IsCA) ->
        extnID = ?'id-ce-basicConstraints',
        extnValue = #'BasicConstraints'{cA = IsCA}}.
 
+build_grisp_ext(GrispMeta) ->
+    Fun = fun({ExtFunName, Val}) -> ?MODULE:ExtFunName(Val) end,
+    lists:map(Fun, GrispMeta).
+
 
 add_years({Date, _} = TS, Years) when is_tuple(Date) ->
     do_add_years(TS, Years);
@@ -209,6 +226,58 @@ print(#'OTPCertificate'{} = Cert) ->
 %%%%%%%%%%%%%%
 %% HELPER
 %%%%%%%%%%%%%%
+
+
+%% There's no way to DER encode standard types using
+%% standard modules, hence use undocumented 'OTP-PUB-KEY'
+%% and some hackery
+
+%% CertificateSerialNumber is derived from Integer
+der_encode_Integer(Int) ->
+    element(2, 'OTP-PUB-KEY':encode('CertificateSerialNumber', Int)).
+
+
+%% InvalidityDate is derived from GeneralizedTime
+der_encode_GeneralizedTime({{Year, Month, Day}, _}) ->
+    TimeString = lists:flatten([string:right(integer_to_list(Int), Pad, $0) ||
+                                {Int, Pad} <- [{Year, 4}, {Month, 2}, {Day, 2}]])
+                               ++ [48,48,48,48,48,48,90],
+    element(2, 'OTP-PUB-KEY':encode('InvalidityDate', TimeString)).
+
+
+%% EmailAddress is derived from IA5String
+der_encode_IA5String(String) ->
+    element(2, 'OTP-PUB-KEY':encode('EmailAddress', String)).
+
+
+ext_grispVersion(VersionString) ->
+    #'Extension'{
+       extnID = ?'id-stritzinger-grispVersion',
+       extnValue = der_encode_IA5String(VersionString)}.
+
+
+ext_grispSerial(Serial) ->
+    #'Extension'{
+       extnID = ?'id-stritzinger-grispSerial',
+       extnValue = der_encode_Integer(Serial)}.
+
+
+ext_grispPcbVersion(VersionString) ->
+    #'Extension'{
+       extnID = ?'id-stritzinger-grispPcbVersion',
+       extnValue = der_encode_IA5String(VersionString)}.
+
+
+ext_grispBatch(Number) ->
+    #'Extension'{
+       extnID = ?'id-stritzinger-grispBatch',
+       extnValue = der_encode_Integer(Number)}.
+
+
+ext_grispProdDate(TS) ->
+    #'Extension'{
+       extnID = ?'id-stritzinger-grispProdDate',
+       extnValue = der_encode_GeneralizedTime(TS)}.
 
 
 calc_expire_years(#'Validity'{notAfter = ?MAX_NOT_AFTER}) ->
