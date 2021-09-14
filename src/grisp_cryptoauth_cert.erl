@@ -14,7 +14,8 @@
          subjPubKeyInfo/1,
          sig_alg/0,
          validity/2,
-         build_ext/1]).
+         build_standard_ext/1,
+         build_grisp_ext/1]).
 
 %% Testing
 -export([compress_sig/1,
@@ -26,19 +27,10 @@
          ext_keyUsage/1,
          ext_extKeyUsage/1,
          ext_isCa/1,
-         ext_grispVersion/1,
-         ext_grispSerial/1,
-         ext_grispPcbVersion/1,
-         ext_grispBatch/1,
-         ext_grispProdDate/1,
          calc_expire_years/1]).
 
 -define(MAX_NOT_AFTER, {generalTime, "99991231235959Z"}).
--define('id-stritzinger-grispVersion', {1,3,6,1,4,1,4849,1}).
--define('id-stritzinger-grispSerial', {1,3,6,1,4,1,4849,2}).
--define('id-stritzinger-grispPcbVersion', {1,3,6,1,4,1,4849,3}).
--define('id-stritzinger-grispBatch', {1,3,6,1,4,1,4849,4}).
--define('id-stritzinger-grispProdDate', {1,3,6,1,4,1,4849,5}).
+-define('id-stritzinger-grispMeta', {1,3,6,1,4,1,4849,1}).
 
 
 decode_pem_file(FilePath) ->
@@ -101,9 +93,23 @@ subjPubKeyInfo(PubKeyBlob) ->
     }.
 
 
-build_ext(ExtList) ->
+build_standard_ext(ExtList) ->
     Fun = fun({ExtFunName, Val}) -> ?MODULE:ExtFunName(Val) end,
     lists:map(Fun, ExtList).
+
+
+build_grisp_ext(GrispMeta) ->
+    {T1,V1} = der_encode_IA5String(element(2, lists:keyfind(grisp_version, 1, GrispMeta))),
+    {T2,V2} = der_encode_Integer(element(2, lists:keyfind(grisp_serial, 1, GrispMeta))),
+    {T3,V3} = der_encode_IA5String(element(2, lists:keyfind(grisp_pcb_version, 1, GrispMeta))),
+    {T4,V4} = der_encode_Integer(element(2, lists:keyfind(grisp_batch, 1, GrispMeta))),
+    {T5,V5} = der_encode_GeneralizedTime(element(2, lists:keyfind(grisp_prod_date, 1, GrispMeta))),
+    ToBeEncoded = [{T1,V1}, {T2,V2}, {T3,V3}, {T4,V4}, {T5,V5}],
+    %% Encode all GRiSP meta data in a Sequence
+    DER = asn1rt_nif:encode_ber_tlv({16, ToBeEncoded}),
+    #'Extension'{
+       extnID = ?'id-stritzinger-grispMeta',
+       extnValue = DER}.
 
 
 add_years({Date, _} = TS, Years) when is_tuple(Date) ->
@@ -191,7 +197,9 @@ print(#'OTPCertificate'{} = Cert) ->
 
 %% CertificateSerialNumber is derived from Integer
 der_encode_Integer(Int) ->
-    element(2, 'OTP-PUB-KEY':encode('CertificateSerialNumber', Int)).
+    <<T:8, _L:8, V/binary>> =
+        element(2, 'OTP-PUB-KEY':encode('CertificateSerialNumber', Int)),
+    {T, V}.
 
 
 %% InvalidityDate is derived from GeneralizedTime
@@ -199,12 +207,16 @@ der_encode_GeneralizedTime({{Year, Month, Day}, _}) ->
     TimeString = lists:flatten([string:right(integer_to_list(Int), Pad, $0) ||
                                 {Int, Pad} <- [{Year, 4}, {Month, 2}, {Day, 2}]])
                                ++ [48,48,48,48,48,48,90],
-    element(2, 'OTP-PUB-KEY':encode('InvalidityDate', TimeString)).
+    <<T:8, _L:8, V/binary>> =
+        element(2, 'OTP-PUB-KEY':encode('InvalidityDate', TimeString)),
+    {T, V}.
 
 
 %% EmailAddress is derived from IA5String
 der_encode_IA5String(String) ->
-    element(2, 'OTP-PUB-KEY':encode('EmailAddress', String)).
+    <<T:8, _L:8, V/binary>> =
+        element(2, 'OTP-PUB-KEY':encode('EmailAddress', String)),
+    {T, V}.
 
 
 ext_authKeyId(#'OTPCertificate'{tbsCertificate = TBS}) ->
@@ -249,35 +261,6 @@ ext_isCa(IsCA) ->
     #'Extension'{
        extnID = ?'id-ce-basicConstraints',
        extnValue = #'BasicConstraints'{cA = IsCA}}.
-
-ext_grispVersion(VersionString) ->
-    #'Extension'{
-       extnID = ?'id-stritzinger-grispVersion',
-       extnValue = der_encode_IA5String(VersionString)}.
-
-
-ext_grispSerial(Serial) ->
-    #'Extension'{
-       extnID = ?'id-stritzinger-grispSerial',
-       extnValue = der_encode_Integer(Serial)}.
-
-
-ext_grispPcbVersion(VersionString) ->
-    #'Extension'{
-       extnID = ?'id-stritzinger-grispPcbVersion',
-       extnValue = der_encode_IA5String(VersionString)}.
-
-
-ext_grispBatch(Number) ->
-    #'Extension'{
-       extnID = ?'id-stritzinger-grispBatch',
-       extnValue = der_encode_Integer(Number)}.
-
-
-ext_grispProdDate(TS) ->
-    #'Extension'{
-       extnID = ?'id-stritzinger-grispProdDate',
-       extnValue = der_encode_GeneralizedTime(TS)}.
 
 
 calc_expire_years(#'Validity'{notAfter = ?MAX_NOT_AFTER}) ->
