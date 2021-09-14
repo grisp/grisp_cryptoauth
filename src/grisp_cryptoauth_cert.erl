@@ -14,18 +14,18 @@
          subjPubKeyInfo/1,
          sig_alg/0,
          validity/2,
-         ext_authkeyid/1,
-         ext_subjkeyid/1,
-         ext_keyusage/1,
-         ext_extkeyusage/1,
-         ext_isCa/1,
-         build_grisp_ext/1]).
+         build_ext/1]).
 
 %% Testing
 -export([compress_sig/1,
          decompress_sig/1,
          compress_date/1,
          decompress_date/1,
+         ext_authKeyId/1,
+         ext_subjKeyId/1,
+         ext_keyUsage/1,
+         ext_extKeyUsage/1,
+         ext_isCa/1,
          ext_grispVersion/1,
          ext_grispSerial/1,
          ext_grispPcbVersion/1,
@@ -101,52 +101,9 @@ subjPubKeyInfo(PubKeyBlob) ->
     }.
 
 
-ext_authkeyid(#'OTPCertificate'{tbsCertificate = TBS}) ->
-    SerialNumber = TBS#'OTPTBSCertificate'.serialNumber,
-    RDNSequence = TBS#'OTPTBSCertificate'.subject,
-    Extensions = TBS#'OTPTBSCertificate'.extensions,
-    #'Extension'{extnValue = SubjectKeyId} =
-        lists:keyfind(?'id-ce-subjectKeyIdentifier', 2, Extensions),
-    #'Extension'{
-       extnID = ?'id-ce-authorityKeyIdentifier',
-       extnValue = 
-        #'AuthorityKeyIdentifier'{
-            keyIdentifier = SubjectKeyId,
-            authorityCertIssuer = [{directoryName, RDNSequence}],
-            authorityCertSerialNumber = SerialNumber}
-      }.
-
-
-ext_subjkeyid(PubKeyBlob) ->
-    #'Extension'{
-       extnID = ?'id-ce-subjectKeyIdentifier',
-       extnValue = crypto:hash(sha, PubKeyBlob)}.
-
-
-ext_keyusage(UsageList) ->
-    #'Extension'{
-       extnID = ?'id-ce-keyUsage',
-       extnValue = UsageList}.
-
-
-ext_extkeyusage(client) ->
-    #'Extension'{
-       extnID = ?'id-ce-extKeyUsage',
-       extnValue = [?'id-kp-clientAuth']};
-ext_extkeyusage(server) ->
-    #'Extension'{
-       extnID = ?'id-ce-extKeyUsage',
-       extnValue = [?'id-kp-serverAuth']}.
-
-
-ext_isCa(IsCA) ->
-    #'Extension'{
-       extnID = ?'id-ce-basicConstraints',
-       extnValue = #'BasicConstraints'{cA = IsCA}}.
-
-build_grisp_ext(GrispMeta) ->
+build_ext(ExtList) ->
     Fun = fun({ExtFunName, Val}) -> ?MODULE:ExtFunName(Val) end,
-    lists:map(Fun, GrispMeta).
+    lists:map(Fun, ExtList).
 
 
 add_years({Date, _} = TS, Years) when is_tuple(Date) ->
@@ -249,6 +206,49 @@ der_encode_GeneralizedTime({{Year, Month, Day}, _}) ->
 der_encode_IA5String(String) ->
     element(2, 'OTP-PUB-KEY':encode('EmailAddress', String)).
 
+
+ext_authKeyId(#'OTPCertificate'{tbsCertificate = TBS}) ->
+    SerialNumber = TBS#'OTPTBSCertificate'.serialNumber,
+    RDNSequence = TBS#'OTPTBSCertificate'.subject,
+    Extensions = TBS#'OTPTBSCertificate'.extensions,
+    #'Extension'{extnValue = SubjectKeyId} =
+        lists:keyfind(?'id-ce-subjectKeyIdentifier', 2, Extensions),
+    #'Extension'{
+       extnID = ?'id-ce-authorityKeyIdentifier',
+       extnValue =
+        #'AuthorityKeyIdentifier'{
+            keyIdentifier = SubjectKeyId,
+            authorityCertIssuer = [{directoryName, RDNSequence}],
+            authorityCertSerialNumber = SerialNumber}
+      }.
+
+
+ext_subjKeyId(PubKeyBlob) ->
+    #'Extension'{
+       extnID = ?'id-ce-subjectKeyIdentifier',
+       extnValue = crypto:hash(sha, PubKeyBlob)}.
+
+
+ext_keyUsage(UsageList) ->
+    #'Extension'{
+       extnID = ?'id-ce-keyUsage',
+       extnValue = UsageList}.
+
+
+ext_extKeyUsage(client) ->
+    #'Extension'{
+       extnID = ?'id-ce-extKeyUsage',
+       extnValue = [?'id-kp-clientAuth']};
+ext_extKeyUsage(server) ->
+    #'Extension'{
+       extnID = ?'id-ce-extKeyUsage',
+       extnValue = [?'id-kp-serverAuth']}.
+
+
+ext_isCa(IsCA) ->
+    #'Extension'{
+       extnID = ?'id-ce-basicConstraints',
+       extnValue = #'BasicConstraints'{cA = IsCA}}.
 
 ext_grispVersion(VersionString) ->
     #'Extension'{

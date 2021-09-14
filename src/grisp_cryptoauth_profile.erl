@@ -15,11 +15,11 @@ tls_client(IssuerCert, {IssueDate, ExpireYears}, Serial, Subject, DERPubKey, Gri
         validity = grisp_cryptoauth_cert:validity(IssueDate, ExpireYears),
         subject = Subject,
         subjectPublicKeyInfo = grisp_cryptoauth_cert:subjPubKeyInfo(DERPubKey),
-        extensions = [
-            grisp_cryptoauth_cert:ext_isCa(false),
-            grisp_cryptoauth_cert:ext_subjkeyid(DERPubKey),
-            grisp_cryptoauth_cert:ext_authkeyid(IssuerCert),
-            grisp_cryptoauth_cert:ext_keyusage([digitalSignature, keyAgreement]),
-            grisp_cryptoauth_cert:ext_extkeyusage(client)
-        ] ++ grisp_cryptoauth_cert:build_grisp_ext(GrispMeta)
+        extensions = grisp_cryptoauth_cert:build_ext([
+            {ext_isCa, false},
+            {ext_subjKeyId, DERPubKey},
+            {ext_authKeyId, IssuerCert},
+            {ext_keyUsage, [digitalSignature, keyAgreement]},
+            {ext_extKeyUsage, client}
+        ] ++ GrispMeta)
     }.
