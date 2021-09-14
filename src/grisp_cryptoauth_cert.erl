@@ -11,8 +11,8 @@
          decompress/2,
          print/1,
          add_years/2,
-         subjPubKeyInfo/1,
-         sig_alg/0,
+         subPubKeyInfo/1,
+         sigAlg/0,
          validity/2,
          build_standard_ext/1,
          build_grisp_ext/1]).
@@ -23,7 +23,7 @@
          compress_date/1,
          decompress_date/1,
          ext_authKeyId/1,
-         ext_subjKeyId/1,
+         ext_subKeyId/1,
          ext_keyUsage/1,
          ext_extKeyUsage/1,
          ext_isCa/1,
@@ -66,7 +66,7 @@ sign(Fun, SignFunOrPrivateKey) when is_atom(Fun) ->
     sign(grisp_cryptoauth_template:Fun(), SignFunOrPrivateKey).
 
 
-sig_alg() ->
+sigAlg() ->
     #'SignatureAlgorithm'{algorithm = ?'ecdsa-with-SHA256'}.
 
 
@@ -82,7 +82,7 @@ validity(TS, Years) ->
     }.
 
 
-subjPubKeyInfo(PubKeyBlob) ->
+subPubKeyInfo(PubKeyBlob) ->
     #'OTPSubjectPublicKeyInfo'{
        algorithm =
          #'PublicKeyAlgorithm'{
@@ -155,7 +155,7 @@ decompress(TBS, <<CompSig:64/binary, CompDate:3/binary, _:5/binary>>) ->
     Sig = decompress_sig(CompSig),
     #'OTPCertificate'{
         tbsCertificate = TBS#'OTPTBSCertificate'{validity = Validity},
-        signatureAlgorithm = sig_alg(),
+        signatureAlgorithm = TBS#'OTPTBSCertificate'.signature,
         signature = Sig
     }.
 
@@ -235,7 +235,7 @@ ext_authKeyId(#'OTPCertificate'{tbsCertificate = TBS}) ->
       }.
 
 
-ext_subjKeyId(PubKeyBlob) ->
+ext_subKeyId(PubKeyBlob) ->
     #'Extension'{
        extnID = ?'id-ce-subjectKeyIdentifier',
        extnValue = crypto:hash(sha, PubKeyBlob)}.

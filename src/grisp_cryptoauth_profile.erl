@@ -10,14 +10,14 @@ tls_client(IssuerCert, {IssueDate, ExpireYears}, Serial, Subject, DERPubKey, Gri
     #'OTPTBSCertificate'{
         version = v3,
         serialNumber = Serial,
-        signature = grisp_cryptoauth_cert:sig_alg(),
+        signature = grisp_cryptoauth_cert:sigAlg(),
         issuer = IssuerCertTBS#'OTPTBSCertificate'.subject,
         validity = grisp_cryptoauth_cert:validity(IssueDate, ExpireYears),
         subject = Subject,
-        subjectPublicKeyInfo = grisp_cryptoauth_cert:subjPubKeyInfo(DERPubKey),
+        subjectPublicKeyInfo = grisp_cryptoauth_cert:subPubKeyInfo(DERPubKey),
         extensions = grisp_cryptoauth_cert:build_standard_ext([
             {ext_isCa, false},
-            {ext_subjKeyId, DERPubKey},
+            {ext_subKeyId, DERPubKey},
             {ext_authKeyId, IssuerCert},
             {ext_keyUsage, [digitalSignature, keyAgreement]},
             {ext_extKeyUsage, client}
