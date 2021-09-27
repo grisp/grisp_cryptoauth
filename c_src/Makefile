@@ -5,7 +5,7 @@ BASEDIR := $(abspath $(CURDIR)/..)
 
 CRYPTOAUTHLIBDIR := $(GRISP_SDK_SYSROOT)/usr/include/cryptoauthlib
 
-PROJECT ?= $(notdir $(BASEDIR))
+PROJECT ?= $(notdir $(BASEDIR))_drv
 PROJECT := $(strip $(PROJECT))
 
 ERTS_INCLUDE_DIR ?= $(shell erl -noshell -s init stop -eval "io:format(\"~ts/erts-~ts/include/\", [code:root_dir(), erlang:system_info(version)]).")

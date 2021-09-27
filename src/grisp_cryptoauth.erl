@@ -43,7 +43,7 @@ init() ->
 
 init(Config) ->
     BuiltConfig = build_config(Config),
-    grisp_cryptoauth_nif:init_device(BuiltConfig).
+    grisp_cryptoauth_drv:init_device(BuiltConfig).
 
 
 sign(Context, primary, Msg) ->
@@ -87,7 +87,7 @@ refresh_key(Context, secondary_3) ->
 
 
 setup_device(Context) ->
-    case grisp_cryptoauth_nif:config_locked(Context) of
+    case grisp_cryptoauth_drv:config_locked(Context) of
         {ok, false} ->
             do_setup_device(Context);
         {ok, true} ->
@@ -106,7 +106,7 @@ read_cert(Context, primary, DerOrPlain) ->
 read_cert(Context, secondary, DerOrPlain) ->
     read_cert(Context, ?SECONDARY_CERT, DerOrPlain);
 read_cert(Context, Slot, DerOrPlain) when is_integer(Slot) ->
-    {ok, CompCert} = grisp_cryptoauth_nif:read_comp_cert(Context, Slot),
+    {ok, CompCert} = grisp_cryptoauth_drv:read_comp_cert(Context, Slot),
     <<TemplateId:4, ChainId:4>> = <<(binary:at(CompCert, 69))>>,
     Templates = application:get_env(grisp_cryptoauth, templates, ?DEFAULT_TEMPLATES),
     case lists:keyfind({TemplateId, ChainId}, 1, Templates) of
@@ -140,7 +140,7 @@ write_cert(Context, Slot, TBSFunName, Cert) when is_integer(Slot) ->
             {error, {undefined, TBSFunName}};
         {{TemplateId, ChainId}, _} ->
             CompCert = grisp_cryptoauth_cert:compress(Cert, TemplateId, ChainId),
-            grisp_cryptoauth_nif:write_comp_cert(Context, Slot, CompCert)
+            grisp_cryptoauth_drv:write_comp_cert(Context, Slot, CompCert)
     end.
 
 
@@ -169,40 +169,40 @@ build_config(Config) ->
 %% ---------------
 
 do_sign(Context, SlotIdx, Msg) ->
-    grisp_cryptoauth_nif:sign(Context, SlotIdx, crypto:hash(sha256, Msg)).
+    grisp_cryptoauth_drv:sign(Context, SlotIdx, crypto:hash(sha256, Msg)).
 
 do_verify(Context, PubKey, Msg, Sig) when is_list(PubKey) ->
     do_verify(Context, binary:list_to_bin(PubKey), Msg, Sig);
 do_verify(Context, PubKey, Msg, Sig) when is_binary(PubKey) ->
-    grisp_cryptoauth_nif:verify_extern(Context, PubKey, crypto:hash(sha256, Msg), Sig);
+    grisp_cryptoauth_drv:verify_extern(Context, PubKey, crypto:hash(sha256, Msg), Sig);
 do_verify(Context, SlotIdx, Msg, Sig) when is_integer(SlotIdx) ->
-    case grisp_cryptoauth_nif:gen_public_key(Context, SlotIdx) of
+    case grisp_cryptoauth_drv:gen_public_key(Context, SlotIdx) of
         {ok, PubKey} ->
-            grisp_cryptoauth_nif:verify_extern(Context, PubKey, crypto:hash(sha256, Msg), Sig);
+            grisp_cryptoauth_drv:verify_extern(Context, PubKey, crypto:hash(sha256, Msg), Sig);
         Error ->
             Error
     end.
 
 do_public_key(Context, SlotIdx) ->
-    {ok, PubKey} = grisp_cryptoauth_nif:gen_public_key(Context, SlotIdx),
+    {ok, PubKey} = grisp_cryptoauth_drv:gen_public_key(Context, SlotIdx),
     <<16#04, PubKey:64/binary>>.
 
 do_refresh_key(Context, SlotIdx) ->
-    grisp_cryptoauth_nif:gen_private_key(Context, SlotIdx).
+    grisp_cryptoauth_drv:gen_private_key(Context, SlotIdx).
 
 do_setup_device(Context) ->
-    grisp_cryptoauth_nif:write_config(Context),
-    grisp_cryptoauth_nif:lock_config(Context),
+    grisp_cryptoauth_drv:write_config(Context),
+    grisp_cryptoauth_drv:lock_config(Context),
     PrivKeys = [?PRIMARY_PRIVATE_KEY, ?SECONDARY_PRIVATE_KEY_1, ?SECONDARY_PRIVATE_KEY_2, ?SECONDARY_PRIVATE_KEY_3],
-    [grisp_cryptoauth_nif:gen_private_key(Context, SlotIdx) || SlotIdx <- PrivKeys],
-    grisp_cryptoauth_nif:lock_data(Context),
+    [grisp_cryptoauth_drv:gen_private_key(Context, SlotIdx) || SlotIdx <- PrivKeys],
+    grisp_cryptoauth_drv:lock_data(Context),
     ok.
 
 generate_device_info(Context) ->
-    {ok, DeviceType} = grisp_cryptoauth_nif:device_info(Context),
-    {ok, SerialNumber} = grisp_cryptoauth_nif:serial_number(Context),
-    {ok, IsConfigLocked} = grisp_cryptoauth_nif:config_locked(Context),
-    {ok, IsDataLocked} = grisp_cryptoauth_nif:data_locked(Context),
+    {ok, DeviceType} = grisp_cryptoauth_drv:device_info(Context),
+    {ok, SerialNumber} = grisp_cryptoauth_drv:serial_number(Context),
+    {ok, IsConfigLocked} = grisp_cryptoauth_drv:config_locked(Context),
+    {ok, IsDataLocked} = grisp_cryptoauth_drv:data_locked(Context),
     Header = "GRiSP2 Secure Element",
     Sep = "=====================",
     DeviceTypeText = ["Type: ", atom_to_binary(DeviceType, latin1)],

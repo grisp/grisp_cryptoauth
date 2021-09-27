@@ -6,7 +6,9 @@
    [kernel,
     stdlib,
     crypto,
-    public_key
+    asn1,
+    public_key,
+    grisp
    ]},
   {env,[]},
   {modules, []},

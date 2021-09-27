@@ -1,4 +1,4 @@
--module(grisp_cryptoauth_nif).
+-module(grisp_cryptoauth_drv).
 
 -export([init_device/1,
          device_info/1,
@@ -23,7 +23,6 @@
 
 -define(APPNAME, grisp_cryptoauth).
 -define(nif_stub, nif_stub_error(?LINE)).
-
 
 init_device(_)  ->          ?nif_stub.
 device_info(_) ->           ?nif_stub.

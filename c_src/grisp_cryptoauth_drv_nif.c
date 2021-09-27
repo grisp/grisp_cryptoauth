@@ -1,31 +1,16 @@
-#include "erl_nif.h"
-#include "atca_basic.h"
-#include "atcacert/atcacert_client.h"
+/* GRiSP2 RTEMS support */
+#define STATIC_ERLANG_NIF 1
 
+#include <cryptoauthlib/atca_basic.h>
 
-static ATCAIfaceCfg grisp_atcab_default_config = {
-    .iface_type                 = ATCA_I2C_IFACE,
-    .devtype                    = ATECC608,
-    {
-        /*
-         * ATECC608B-TFLXTLSS default address;
-         * unconfigured chips usually have 0xCO
-         */
-        .atcai2c.address        = 0x6C,
-        .atcai2c.bus            = 1,
-        .atcai2c.baud           = 100000,
-    },
-    .wake_delay                 = 1500,
-    .rx_retries                 = 20
-};
-
-
-ErlNifResourceType *device_resource_type;
-
-struct device_context_t {
-    ATCAIfaceCfg config;
-    ATCADevice device;
-};
+#include <erl_nif.h>
+#include <fcntl.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
 
 
 /*
@@ -128,6 +113,31 @@ static const uint8_t grisp_device_default_config[] = {
 #define BINARY_FROM_RAW(env, bin_term, raw, size) memcpy(enif_make_new_binary(env, size, &bin_term), raw, size)
 
 
+static ATCAIfaceCfg grisp_atcab_default_config = {
+    .iface_type                 = ATCA_I2C_IFACE,
+    .devtype                    = ATECC608,
+    {
+        /*
+         * ATECC608B-TFLXTLSS default address;
+         * unconfigured chips usually have 0xCO
+         */
+        .atcai2c.address        = 0x6C,
+        .atcai2c.bus            = 1,
+        .atcai2c.baud           = 100000,
+    },
+    .wake_delay                 = 1500,
+    .rx_retries                 = 20
+};
+
+
+ErlNifResourceType *device_resource_type;
+
+struct device_context_t {
+    ATCAIfaceCfg config;
+    ATCADevice device;
+};
+
+
 struct device_type_nif {
     ATCADeviceType type;
     const char *name;
@@ -180,7 +190,7 @@ static void build_atcab_config(ErlNifEnv* env, ATCAIfaceCfg *atcab_config, ERL_N
 }
 
 
-int load(ErlNifEnv* env, void** priv_data, ERL_NIF_TERM load_info)
+int load_ca_drv(ErlNifEnv* env, void** priv_data, ERL_NIF_TERM load_info)
 {
     /*
      * TODO: Destructor missing
@@ -514,4 +524,4 @@ static ErlNifFunc nif_funcs[] = {
     {"read_comp_cert",  2, read_comp_cert_nif},
 };
 
-ERL_NIF_INIT(grisp_cryptoauth_nif, nif_funcs, &load, NULL, NULL, NULL);
+ERL_NIF_INIT(grisp_cryptoauth_drv, nif_funcs, &load_ca_drv, NULL, NULL, NULL);
