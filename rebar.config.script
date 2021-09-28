@@ -1,0 +1,22 @@
+%% The purpose of this script is to make both RTEMS abnd Linux
+%% builds possible without a hassle. For Linux this script won't
+%% have any effect, for RTEMS it adjusts the `deps` as well as
+%% the `plugins` to make the toolchain work.
+
+GrispBuildActive = os:getenv("GRISP") /= false,
+
+case GrispBuildActive of
+    false ->
+        CONFIG; % env var not defined
+    true  ->
+        {deps, Deps} = lists:keyfind(deps, 1, CONFIG),
+        CONFIG1 = lists:keystore(deps, 1, CONFIG, {deps, Deps ++ [grisp]}),
+        CONFIG2 = lists:keystore(plugins, 1, CONFIG1, {plugins, [rebar3_grisp]}),
+        CONFIG3 = lists:keydelete(pre_hooks, 1, CONFIG2),
+        lists:keydelete(post_hooks, 1, CONFIG3)
+end.
+
+
+
+
+
