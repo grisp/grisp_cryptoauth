@@ -221,8 +221,14 @@ do_verify(Context, SlotIdx, Msg, Sig) when is_integer(SlotIdx) ->
     end.
 
 do_public_key(Context, SlotIdx) ->
-    {ok, PubKey} = grisp_cryptoauth_drv:gen_public_key(Context, SlotIdx),
-    <<16#04, PubKey:64/binary>>.
+    case grisp_cryptoauth_drv:gen_public_key(Context, SlotIdx) of
+        {ok, PubKey} ->
+                %% 0x04 means uncompressed (both X and
+                %% Y integers), not just the X integer
+                {ok, <<16#04, PubKey:64/binary>>};
+        Error ->
+                Error
+    end.
 
 do_refresh_key(Context, SlotIdx) ->
     grisp_cryptoauth_drv:gen_private_key(Context, SlotIdx).
@@ -241,11 +247,11 @@ generate_device_info(Context) ->
     {ok, IsConfigLocked} = grisp_cryptoauth_drv:config_locked(Context),
     {ok, IsDataLocked} = grisp_cryptoauth_drv:data_locked(Context),
     Header = "GRiSP2 Secure Element",
-    Sep = "=====================",
-    DeviceTypeText = ["Type: ", atom_to_binary(DeviceType, latin1)],
-    SerialNumberText = ["Serial Number: ", bin_to_hex(SerialNumber)],
-    ConfigLockedText = ["Config Locked: ", atom_to_binary(IsConfigLocked, latin1)],
-    DataLockedText = ["Data Locked: ", atom_to_binary(IsDataLocked, latin1)],
+    Sep =    "=====================",
+    DeviceTypeText =    ["Type: ", atom_to_binary(DeviceType, latin1)],
+    SerialNumberText =  ["Serial Number: ", bin_to_hex(SerialNumber)],
+    ConfigLockedText =  ["Config Locked: ", atom_to_binary(IsConfigLocked, latin1)],
+    DataLockedText =    ["Data Locked: ", atom_to_binary(IsDataLocked, latin1)],
     io_lib:format("~s~n~s~n~s~n~s~n~s~n~s~n",
               [Header, Sep, DeviceTypeText, SerialNumberText, ConfigLockedText, DataLockedText]).
 
