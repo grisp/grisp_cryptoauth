@@ -22,7 +22,6 @@
 
 -on_load(init/0).
 
--define(APPNAME, grisp_cryptoauth).
 -define(nif_stub, nif_stub_error(?LINE)).
 
 init_device(_)  ->          ?nif_stub.
@@ -46,16 +45,16 @@ write_comp_cert(_,_,_) ->   ?nif_stub.
 read_comp_cert(_,_) ->      ?nif_stub.
 
 init() ->
-    SoName = case code:priv_dir(?APPNAME) of
+    SoName = case code:priv_dir(grisp_cryptoauth) of
         {error, bad_name} ->
             case filelib:is_dir(filename:join(["..", priv])) of
                 true ->
-                    filename:join(["..", priv, ?APPNAME]);
+                    filename:join(["..", priv, grisp_cryptoauth_drv]);
                 _ ->
-                    filename:join([priv, ?APPNAME])
+                    filename:join([priv, grisp_cryptoauth_drv])
             end;
         Dir ->
-            filename:join(Dir, ?APPNAME)
+            filename:join(Dir, grisp_cryptoauth_drv)
     end,
     erlang:load_nif(SoName, 0).
 
