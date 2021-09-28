@@ -32,10 +32,9 @@ Writing Certificates
 --------------------
 
 ```
-{ok, Context} = grisp_cryptoauth:init().
 PrivateKey = public_key:generate_key({namedCurve, secp256r1}).
 Cert = grisp_cryptoauth_cert:sign(test, PrivateKey).
-grisp_cryptoauth:write_cert(Context, primary, test, Cert).
+grisp_cryptoauth:write_cert(primary, test, Cert).
 ```
 
 
@@ -43,8 +42,8 @@ Reading Certificates
 --------------------
 
 ```
-{ok, Context} = grisp_cryptoauth:init().
-grisp_cryptoauth:read_cert(Context, primary, plain).
+grisp_cryptoauth:read_cert(primary, plain).
+grisp_cryptoauth:read_cert(primary, der).
 ```
 
 

@@ -1,6 +1,17 @@
 -module(grisp_cryptoauth).
 
 %% Main API
+-export([sign/2,
+         verify/3,
+         public_key/1,
+         refresh_key/1,
+         read_cert/2,
+         write_cert/3,
+         device_info/0,
+         setup_device/0]).
+
+%% Use for testing
+%% without API server
 -export([init/0,
          init/1,
          sign/3,
@@ -33,6 +44,8 @@
           i2c_bus => 1,
           i2c_address => 16#6C}).
 
+-define(API_SERVER, grisp_cryptoauth_api_server).
+-define(CALL_API_SERVER(Args), gen_server:call(?API_SERVER, {?FUNCTION_NAME, Args})).
 
 %% ---------------
 %% Main API
@@ -46,6 +59,9 @@ init(Config) ->
     grisp_cryptoauth_drv:init_device(BuiltConfig).
 
 
+sign(Type, Msg) ->
+    ?CALL_API_SERVER([Type, Msg]).
+
 sign(Context, primary, Msg) ->
     do_sign(Context, ?PRIMARY_PRIVATE_KEY, Msg);
 sign(Context, secondary_1, Msg) ->
@@ -55,6 +71,9 @@ sign(Context, secondary_2, Msg) ->
 sign(Context, secondary_3, Msg) ->
     do_sign(Context, ?SECONDARY_PRIVATE_KEY_3, Msg).
 
+
+verify(Type, Msg, Sig) ->
+    ?CALL_API_SERVER([Type, Msg, Sig]).
 
 verify(Context, primary, Msg, Sig) ->
     do_verify(Context, ?PRIMARY_PRIVATE_KEY, Msg, Sig);
@@ -68,6 +87,9 @@ verify(Context, PubKey, Msg, Sig) when is_binary(PubKey) or is_list(PubKey) ->
     do_verify(Context, PubKey, Msg, Sig).
 
 
+public_key(Type) ->
+    ?CALL_API_SERVER([Type]).
+
 public_key(Context, primary) ->
     do_public_key(Context, ?PRIMARY_PRIVATE_KEY);
 public_key(Context, secondary_1) ->
@@ -78,6 +100,9 @@ public_key(Context, secondary_3) ->
     do_public_key(Context, ?SECONDARY_PRIVATE_KEY_3).
 
 
+refresh_key(Type) ->
+    ?CALL_API_SERVER([Type]).
+
 refresh_key(Context, secondary_1) ->
     do_refresh_key(Context, ?SECONDARY_PRIVATE_KEY_1);
 refresh_key(Context, secondary_2) ->
@@ -85,6 +110,9 @@ refresh_key(Context, secondary_2) ->
 refresh_key(Context, secondary_3) ->
     do_refresh_key(Context, ?SECONDARY_PRIVATE_KEY_3).
 
+
+setup_device() ->
+    ?CALL_API_SERVER([]).
 
 setup_device(Context) ->
     case grisp_cryptoauth_drv:config_locked(Context) of
@@ -97,9 +125,15 @@ setup_device(Context) ->
     end.
 
 
+device_info() ->
+    ?CALL_API_SERVER([]).
+
 device_info(Context) ->
     io:format("~s", [generate_device_info(Context)]).
 
+
+read_cert(Type, DerOrPlain) ->
+    ?CALL_API_SERVER([Type, DerOrPlain]).
 
 read_cert(Context, primary, DerOrPlain) ->
     read_cert(Context, ?PRIMARY_CERT, DerOrPlain);
@@ -128,6 +162,9 @@ read_cert(Context, Slot, DerOrPlain) when is_integer(Slot) ->
             end
     end.
 
+
+write_cert(Type, TBSFunName, Cert) ->
+    ?CALL_API_SERVER([Type, TBSFunName, Cert]).
 
 write_cert(Context, primary, TBSFunName, Cert) ->
     write_cert(Context, ?PRIMARY_CERT, TBSFunName, Cert);
