@@ -14,6 +14,8 @@
 %% without API server
 -export([init/0,
          init/1,
+         sleep/0,
+         sleep/1,
          sign/3,
          verify/4,
          public_key/2,
@@ -57,6 +59,13 @@ init() ->
 init(Config) ->
     BuiltConfig = build_config(Config),
     grisp_cryptoauth_drv:init_device(BuiltConfig).
+
+
+sleep() ->
+    ?CALL_API_SERVER([]).
+
+sleep(Context) ->
+    grisp_cryptoauth_drv:sleep_device(Context).
 
 
 sign(Type, Msg) ->

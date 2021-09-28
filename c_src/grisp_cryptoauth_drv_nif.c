@@ -226,6 +226,16 @@ static ERL_NIF_TERM init_device_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 }
 
 
+static ERL_NIF_TERM sleep_device_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    INIT_DEVICE;
+
+    EXEC_CA_FUN(calib_sleep, DEVICE);
+
+    return MK_OK(env);
+}
+
+
 static ERL_NIF_TERM device_info_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
     INIT_DEVICE;
@@ -505,6 +515,7 @@ static ERL_NIF_TERM read_comp_cert_nif(ErlNifEnv* env, int argc, const ERL_NIF_T
 
 static ErlNifFunc nif_funcs[] = {
     {"init_device",     1, init_device_nif},
+    {"sleep_device",    1, sleep_device_nif},
     {"device_info",     1, device_info_nif},
     {"config_locked",   1, config_locked_nif},
     {"data_locked",     1, data_locked_nif},

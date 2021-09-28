@@ -1,6 +1,7 @@
 -module(grisp_cryptoauth_drv).
 
 -export([init_device/1,
+         sleep_device/1,
          device_info/1,
          config_locked/1,
          data_locked/1,
@@ -25,6 +26,7 @@
 -define(nif_stub, nif_stub_error(?LINE)).
 
 init_device(_)  ->          ?nif_stub.
+sleep_device(_)  ->         ?nif_stub.
 device_info(_) ->           ?nif_stub.
 config_locked(_) ->         ?nif_stub.
 data_locked(_) ->           ?nif_stub.
