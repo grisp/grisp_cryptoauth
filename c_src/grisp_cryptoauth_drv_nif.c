@@ -1,5 +1,6 @@
-/* GRiSP2 RTEMS support */
+#ifdef __rtems__
 #define STATIC_ERLANG_NIF 1
+#endif
 
 #include <cryptoauthlib/atca_basic.h>
 
