@@ -3,7 +3,8 @@
 %% have any effect, for RTEMS it adjusts the `deps` as well as
 %% the `plugins` to make the toolchain work.
 
-GrispBuildActive = os:getenv("GRISP") /= false,
+GrispFlag = os:getenv("GRISP"),
+GrispBuildActive = (GrispFlag /= false) and (GrispFlag /= []),
 
 case GrispBuildActive of
     false ->
@@ -15,8 +16,3 @@ case GrispBuildActive of
         CONFIG3 = lists:keydelete(pre_hooks, 1, CONFIG2),
         lists:keydelete(post_hooks, 1, CONFIG3)
 end.
-
-
-
-
-
