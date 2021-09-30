@@ -2,14 +2,34 @@
 
 -include_lib("public_key/include/public_key.hrl").
 
--export([test/0]).
+-export([grisp2/0, test/0]).
 
 
+%% Default GRiSP2 certificate.
+grisp2() ->
+    IssuerCert = grisp_cryptoauth_cert:decode_pem(
+                   grisp_cryptoauth_known_certs:test_intermediate()),
+    IssueDateInfo = {{{2021,10,1}, {0,0,0}}, no_expiration},
+    {ok, DERPubKey} = grisp_cryptoauth:public_key(primary),
+    GrispMeta = grisp_eeprom:read(),
+    {_, Serial} = lists:keyfind(grisp_serial, 1, GrispMeta),
+    Subject = {rdnSequence, [[
+        #'AttributeTypeAndValue'{
+            type = ?'id-at-commonName',
+            value = {utf8String, "GRiSP2 " ++ integer_to_list(Serial)}
+        }
+    ]]},
+    grisp_cryptoauth_profile:tls_client(IssuerCert, IssueDateInfo,
+                                        Subject, DERPubKey, GrispMeta).
+
+
+%% Just used for testing, no access to
+%% issuer certificate, Secure Element
+%% or EEPROM needed.
 test() ->
     IssuerCert = grisp_cryptoauth_cert:decode_pem(
                    grisp_cryptoauth_known_certs:test_intermediate()),
     IssueDateInfo = {{{2021,9,1}, {0,0,0}}, no_expiration},
-    Serial = 1,
     Subject = {rdnSequence, [[
         #'AttributeTypeAndValue'{
             type = ?'id-at-commonName',
@@ -23,9 +43,10 @@ test() ->
                   161>>,
     GrispMeta = [
         {grisp_version, "2"},
-        {grisp_serial, Serial},
+        {grisp_serial, 1},
         {grisp_pcb_version, "1.2"},
+        {grisp_pcb_variant, 1},
         {grisp_batch, 1},
         {grisp_prod_date, {{2021,10,1}, {0,0,0}}}],
-    grisp_cryptoauth_profile:tls_client(IssuerCert, IssueDateInfo, Serial,
+    grisp_cryptoauth_profile:tls_client(IssuerCert, IssueDateInfo,
                                         Subject, DERPubKey, GrispMeta).

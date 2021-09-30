@@ -2,11 +2,12 @@
 
 -include_lib("public_key/include/public_key.hrl").
 
--export([tls_client/6]).
+-export([tls_client/5]).
 
 
-tls_client(IssuerCert, {IssueDate, ExpireYears}, Serial, Subject, DERPubKey, GrispMeta) ->
+tls_client(IssuerCert, {IssueDate, ExpireYears}, Subject, DERPubKey, GrispMeta) ->
     IssuerCertTBS = IssuerCert#'OTPCertificate'.tbsCertificate,
+    {_, Serial} = lists:keyfind(grisp_serial, 1, GrispMeta),
     #'OTPTBSCertificate'{
         version = v3,
         serialNumber = Serial,

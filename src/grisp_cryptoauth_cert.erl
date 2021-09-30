@@ -34,8 +34,9 @@
 -define('id-stritzinger-grispVersion',      {1,3,6,1,4,1,4849,1}).
 -define('id-stritzinger-grispSerial',       {1,3,6,1,4,1,4849,2}).
 -define('id-stritzinger-grispPcbVersion',   {1,3,6,1,4,1,4849,3}).
--define('id-stritzinger-grispBatch',        {1,3,6,1,4,1,4849,4}).
--define('id-stritzinger-grispProdDate',     {1,3,6,1,4,1,4849,5}).
+-define('id-stritzinger-grispPcbVariant',   {1,3,6,1,4,1,4849,4}).
+-define('id-stritzinger-grispBatch',        {1,3,6,1,4,1,4849,5}).
+-define('id-stritzinger-grispProdDate',     {1,3,6,1,4,1,4849,6}).
 
 
 decode_pem_file(FilePath) ->
@@ -113,6 +114,8 @@ build_grisp_ext(GrispMeta) ->
                der_encode_Integer(element(2, lists:keyfind(grisp_serial, 1, GrispMeta)))]},
          {16, [der_encode_ObjectIdentifier(?'id-stritzinger-grispPcbVersion'),
                der_encode_IA5String(element(2, lists:keyfind(grisp_pcb_version, 1, GrispMeta)))]},
+         {16, [der_encode_ObjectIdentifier(?'id-stritzinger-grispPcbVariant'),
+               der_encode_Integer(element(2, lists:keyfind(grisp_pcb_variant, 1, GrispMeta)))]},
          {16, [der_encode_ObjectIdentifier(?'id-stritzinger-grispBatch'),
                der_encode_Integer(element(2, lists:keyfind(grisp_batch, 1, GrispMeta)))]},
          {16, [der_encode_ObjectIdentifier(?'id-stritzinger-grispProdDate'),
