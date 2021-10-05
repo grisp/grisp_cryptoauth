@@ -43,7 +43,7 @@
         ['ATECC508A', 'ATECC608A', 'ATECC608B', 'ATECC608']).
 -define(DEFAULT_CONFIG,
         #{type => ?DEFAULT_DEVICE,
-          i2c_bus => 1,
+          i2c_bus => 0,
           i2c_address => 16#6C}).
 
 -define(API_SERVER, grisp_cryptoauth_api_server).

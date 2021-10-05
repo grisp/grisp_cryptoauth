@@ -11,7 +11,7 @@ grisp2() ->
                    grisp_cryptoauth_known_certs:test_intermediate()),
     IssueDateInfo = {{{2021,10,1}, {0,0,0}}, no_expiration},
     {ok, DERPubKey} = grisp_cryptoauth:public_key(primary),
-    GrispMeta = grisp_eeprom:read(),
+    {ok, GrispMeta} = grisp_hw:read_eeprom(),
     {_, Serial} = lists:keyfind(grisp_serial, 1, GrispMeta),
     Subject = {rdnSequence, [[
         #'AttributeTypeAndValue'{

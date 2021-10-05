@@ -11,7 +11,6 @@ start(_StartType, _StartArgs) ->
     %% GRiSP platform, otherwise the
     %% standard Linux bus driver is used.
     application:ensure_all_started(grisp),
-    grisp:add_device(i2c, grisp_eeprom),
     grisp_cryptoauth_sup:start_link().
 
 

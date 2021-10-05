@@ -123,7 +123,7 @@ static ATCAIfaceCfg grisp_atcab_default_config = {
          * unconfigured chips usually have 0xCO
          */
         .atcai2c.address        = 0x6C,
-        .atcai2c.bus            = 1,
+        .atcai2c.bus            = 0,
         .atcai2c.baud           = 100000,
     },
     .wake_delay                 = 1500,
