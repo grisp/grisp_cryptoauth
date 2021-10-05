@@ -118,22 +118,22 @@ encode_grisp_meta(GrispMeta) ->
     %% Note: we enforce order here!
     asn1rt_nif:encode_ber_tlv({16,
         [{16, [der_encode_ObjectIdentifier(?'id-stritzinger-grispVersion'),
-               der_encode_IA5String(element(2, lists:keyfind(grisp_version, 1, GrispMeta)))]},
+               der_encode_IA5String(maps:get(grisp_version, GrispMeta))]},
          {16, [der_encode_ObjectIdentifier(?'id-stritzinger-grispSerial'),
-               der_encode_Integer(element(2, lists:keyfind(grisp_serial, 1, GrispMeta)))]},
+               der_encode_Integer(maps:get(grisp_serial, GrispMeta))]},
          {16, [der_encode_ObjectIdentifier(?'id-stritzinger-grispPcbVersion'),
-               der_encode_IA5String(element(2, lists:keyfind(grisp_pcb_version, 1, GrispMeta)))]},
+               der_encode_IA5String(maps:get(grisp_pcb_version, GrispMeta))]},
          {16, [der_encode_ObjectIdentifier(?'id-stritzinger-grispPcbVariant'),
-               der_encode_Integer(element(2, lists:keyfind(grisp_pcb_variant, 1, GrispMeta)))]},
+               der_encode_Integer(maps:get(grisp_pcb_variant, GrispMeta))]},
          {16, [der_encode_ObjectIdentifier(?'id-stritzinger-grispBatch'),
-               der_encode_Integer(element(2, lists:keyfind(grisp_batch, 1, GrispMeta)))]},
+               der_encode_Integer(maps:get(grisp_batch, GrispMeta))]},
          {16, [der_encode_ObjectIdentifier(?'id-stritzinger-grispProdDate'),
-               der_encode_GeneralizedTime(element(2, lists:keyfind(grisp_prod_date, 1, GrispMeta)))]}]}).
+               der_encode_GeneralizedTime(maps:get(grisp_prod_date, GrispMeta))]}]}).
 
 
 decode_grisp_meta(DER) ->
     {{16, Attrs}, <<>>} = asn1rt_nif:decode_ber_tlv(DER),
-    [decode_grisp_meta_attr(Attr) || Attr <- Attrs].
+    maps:from_list([decode_grisp_meta_attr(Attr) || Attr <- Attrs]).
 
 
 decode_grisp_meta_attr({16, [{6, OID},{22, IA5String}]}) ->

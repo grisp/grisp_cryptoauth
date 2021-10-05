@@ -7,7 +7,7 @@
 
 tls_client(IssuerCert, {IssueDate, ExpireYears}, Subject, DERPubKey, GrispMeta) ->
     IssuerCertTBS = IssuerCert#'OTPCertificate'.tbsCertificate,
-    {_, Serial} = lists:keyfind(grisp_serial, 1, GrispMeta),
+    Serial = maps:get(grisp_serial, GrispMeta),
     #'OTPTBSCertificate'{
         version = v3,
         serialNumber = Serial,

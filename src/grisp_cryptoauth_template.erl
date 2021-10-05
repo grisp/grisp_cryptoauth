@@ -9,10 +9,10 @@
 grisp2() ->
     IssuerCert = grisp_cryptoauth_cert:decode_pem(
                    grisp_cryptoauth_known_certs:test_intermediate()),
-    IssueDateInfo = {{{2021,10,1}, {0,0,0}}, no_expiration},
+    IssueDateInfo = {{{2021,9,1}, {0,0,0}}, no_expiration},
     {ok, DERPubKey} = grisp_cryptoauth:public_key(primary),
-    {ok, GrispMeta} = grisp_hw:read_eeprom(),
-    {_, Serial} = lists:keyfind(grisp_serial, 1, GrispMeta),
+    {ok, GrispMeta} = grisp_hw:eeprom_read(),
+    Serial = maps:get(grisp_serial, GrispMeta),
     Subject = {rdnSequence, [[
         #'AttributeTypeAndValue'{
             type = ?'id-at-commonName',
@@ -41,12 +41,12 @@ test() ->
                   215,77,227,214,133,58,247,44,163,184,81,162,36,49,11,17,252,
                   217,155,174,8,195,223,167,142,153,71,156,107,48,216,101,15,
                   161>>,
-    GrispMeta = [
-        {grisp_version, "2"},
-        {grisp_serial, 1},
-        {grisp_pcb_version, "1.2"},
-        {grisp_pcb_variant, 1},
-        {grisp_batch, 1},
-        {grisp_prod_date, {{2021,10,1}, {0,0,0}}}],
+    GrispMeta = #{
+        grisp_version       => "2",
+        grisp_serial        => 1,
+        grisp_pcb_version   => "1.2",
+        grisp_pcb_variant   => 1,
+        grisp_batch         => 1,
+        grisp_prod_date     => {{2021,9,1}, {0,0,0}}},
     grisp_cryptoauth_profile:tls_client(IssuerCert, IssueDateInfo,
                                         Subject, DERPubKey, GrispMeta).
