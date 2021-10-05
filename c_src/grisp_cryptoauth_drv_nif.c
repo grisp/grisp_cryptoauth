@@ -514,26 +514,41 @@ static ERL_NIF_TERM read_comp_cert_nif(ErlNifEnv* env, int argc, const ERL_NIF_T
 }
 
 
+static ERL_NIF_TERM gen_random_bytes_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    INIT_DEVICE;
+
+    uint8_t random_bytes[32];
+    EXEC_CA_FUN(atcab_random_ext, DEVICE, &random_bytes);
+
+    ERL_NIF_TERM bin_random_bytes;
+    BINARY_FROM_RAW(env, bin_random_bytes, random_bytes, 32);
+
+    return MK_SUCCESS(env, bin_random_bytes);
+}
+
+
 static ErlNifFunc nif_funcs[] = {
-    {"init_device",     1, init_device_nif},
-    {"sleep_device",    1, sleep_device_nif},
-    {"device_info",     1, device_info_nif},
-    {"config_locked",   1, config_locked_nif},
-    {"data_locked",     1, data_locked_nif},
-    {"slot_locked",     2, slot_locked_nif},
-    {"serial_number",   1, serial_number_nif},
-    {"read_config",     1, read_config_nif},
-    {"write_config",    1, write_config_nif},
-    {"lock_config",     1, lock_config_nif},
-    {"lock_data",       1, lock_data_nif},
-    {"lock_slot",       2, lock_slot_nif},
-    {"gen_private_key", 2, gen_private_key_nif},
-    {"gen_public_key",  2, gen_public_key_nif},
-    {"sign",            3, sign_nif},
-    {"verify_extern",   4, verify_extern_nif},
-    {"verify_stored",   4, verify_stored_nif},
-    {"write_comp_cert", 3, write_comp_cert_nif},
-    {"read_comp_cert",  2, read_comp_cert_nif},
+    {"init_device",         1, init_device_nif},
+    {"sleep_device",        1, sleep_device_nif},
+    {"device_info",         1, device_info_nif},
+    {"config_locked",       1, config_locked_nif},
+    {"data_locked",         1, data_locked_nif},
+    {"slot_locked",         2, slot_locked_nif},
+    {"serial_number",       1, serial_number_nif},
+    {"read_config",         1, read_config_nif},
+    {"write_config",        1, write_config_nif},
+    {"lock_config",         1, lock_config_nif},
+    {"lock_data",           1, lock_data_nif},
+    {"lock_slot",           2, lock_slot_nif},
+    {"gen_private_key",     2, gen_private_key_nif},
+    {"gen_public_key",      2, gen_public_key_nif},
+    {"sign",                3, sign_nif},
+    {"verify_extern",       4, verify_extern_nif},
+    {"verify_stored",       4, verify_stored_nif},
+    {"write_comp_cert",     3, write_comp_cert_nif},
+    {"read_comp_cert",      2, read_comp_cert_nif},
+    {"gen_random_bytes",    1, gen_random_bytes_nif},
 };
 
 ERL_NIF_INIT(grisp_cryptoauth_drv, nif_funcs, &load_ca_drv, NULL, NULL, NULL);

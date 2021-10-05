@@ -8,7 +8,8 @@
          read_cert/2,
          write_cert/3,
          device_info/0,
-         setup_device/0]).
+         setup_device/0,
+         random_bytes/1]).
 
 %% Use for testing
 %% without API server
@@ -23,7 +24,8 @@
          read_cert/3,
          write_cert/4,
          device_info/1,
-         setup_device/1]).
+         setup_device/1,
+         random_bytes/2]).
 
 
 -include_lib("public_key/include/public_key.hrl").
@@ -188,6 +190,21 @@ write_cert(Context, Slot, TBSFunName, Cert) when is_integer(Slot) ->
             CompCert = grisp_cryptoauth_cert:compress(Cert, TemplateId, ChainId),
             grisp_cryptoauth_drv:write_comp_cert(Context, Slot, CompCert)
     end.
+
+
+random_bytes(N) ->
+    ?CALL_API_SERVER([N]).
+
+random_bytes(Context, N) ->
+    <<RandBytes:N/binary, _/binary>> = random_bytes(Context, (N div 32) + 1, []),
+    {ok, RandBytes}.
+
+random_bytes(_Context, 0, Acc) ->
+    iolist_to_binary(Acc);
+random_bytes(Context, ChunksN, Acc) ->
+    %% Generate a 32 byte chunk
+    {ok, RandBytes} = grisp_cryptoauth_drv:gen_random_bytes(Context),
+    random_bytes(Context, ChunksN-1, [RandBytes | Acc]).
 
 
 %% ---------------

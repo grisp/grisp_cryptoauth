@@ -18,7 +18,8 @@
          verify_extern/4,
          verify_stored/4,
          write_comp_cert/3,
-         read_comp_cert/2]).
+         read_comp_cert/2,
+         gen_random_bytes/1]).
 
 -on_load(init/0).
 
@@ -43,6 +44,7 @@ verify_extern(_,_,_,_) ->   ?nif_stub.
 verify_stored(_,_,_,_) ->   ?nif_stub.
 write_comp_cert(_,_,_) ->   ?nif_stub.
 read_comp_cert(_,_) ->      ?nif_stub.
+gen_random_bytes(_) ->      ?nif_stub.
 
 init() ->
     SoName = case code:priv_dir(grisp_cryptoauth) of
