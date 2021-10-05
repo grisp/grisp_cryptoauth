@@ -1,3 +1,5 @@
 *.lock
 _build
 *.o
+_checkouts
+_grisp
