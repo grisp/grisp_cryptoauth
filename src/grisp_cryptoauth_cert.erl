@@ -27,7 +27,9 @@
          ext_keyUsage/1,
          ext_extKeyUsage/1,
          ext_isCa/1,
-         calc_expire_years/1]).
+         calc_expire_years/1,
+         encode_grisp_meta/1,
+         decode_grisp_meta/1]).
 
 -define(MAX_NOT_AFTER, {generalTime, "99991231235959Z"}).
 -define('id-stritzinger-grispMeta',         {1,3,6,1,4,1,4849,0}).
@@ -105,9 +107,16 @@ build_standard_ext(ExtList) ->
 
 
 build_grisp_ext(GrispMeta) ->
+    #'Extension'{
+       extnID = ?'id-stritzinger-grispMeta',
+       extnValue = encode_grisp_meta(GrispMeta)}.
+
+
+encode_grisp_meta(GrispMeta) ->
     %% Encode all GRiSP meta data as a 'map', e.g. a
     %% Sequence of Sequences of length 2 (for key and value)
-    DER = asn1rt_nif:encode_ber_tlv({16,
+    %% Note: we enforce order here!
+    asn1rt_nif:encode_ber_tlv({16,
         [{16, [der_encode_ObjectIdentifier(?'id-stritzinger-grispVersion'),
                der_encode_IA5String(element(2, lists:keyfind(grisp_version, 1, GrispMeta)))]},
          {16, [der_encode_ObjectIdentifier(?'id-stritzinger-grispSerial'),
@@ -119,10 +128,28 @@ build_grisp_ext(GrispMeta) ->
          {16, [der_encode_ObjectIdentifier(?'id-stritzinger-grispBatch'),
                der_encode_Integer(element(2, lists:keyfind(grisp_batch, 1, GrispMeta)))]},
          {16, [der_encode_ObjectIdentifier(?'id-stritzinger-grispProdDate'),
-               der_encode_GeneralizedTime(element(2, lists:keyfind(grisp_prod_date, 1, GrispMeta)))]}]}),
-    #'Extension'{
-       extnID = ?'id-stritzinger-grispMeta',
-       extnValue = DER}.
+               der_encode_GeneralizedTime(element(2, lists:keyfind(grisp_prod_date, 1, GrispMeta)))]}]}).
+
+
+decode_grisp_meta(DER) ->
+    {{16, Attrs}, <<>>} = asn1rt_nif:decode_ber_tlv(DER),
+    [decode_grisp_meta_attr(Attr) || Attr <- Attrs].
+
+
+decode_grisp_meta_attr({16, [{6, OID},{22, IA5String}]}) ->
+    {map_grisp_meta(der_decode_ObjectIdentifier(OID)), der_decode_IA5String(IA5String)};
+decode_grisp_meta_attr({16, [{6, OID},{2, Integer}]}) ->
+    {map_grisp_meta(der_decode_ObjectIdentifier(OID)), der_decode_Integer(Integer)};
+decode_grisp_meta_attr({16, [{6, OID},{24, GeneralizedTime}]}) ->
+    {map_grisp_meta(der_decode_ObjectIdentifier(OID)), der_decode_GeneralizedTime(GeneralizedTime)}.
+
+
+map_grisp_meta(?'id-stritzinger-grispVersion')      -> grisp_version;
+map_grisp_meta(?'id-stritzinger-grispSerial')       -> grisp_serial;
+map_grisp_meta(?'id-stritzinger-grispPcbVersion')   -> grisp_pcb_version;
+map_grisp_meta(?'id-stritzinger-grispPcbVariant')   -> grisp_pcb_variant;
+map_grisp_meta(?'id-stritzinger-grispBatch')        -> grisp_batch;
+map_grisp_meta(?'id-stritzinger-grispProdDate')     -> grisp_prod_date.
 
 
 add_years({Date, _} = TS, Years) when is_tuple(Date) ->
@@ -214,6 +241,10 @@ der_encode_Integer(Int) ->
         element(2, 'OTP-PUB-KEY':encode('CertificateSerialNumber', Int)),
     {T, V}.
 
+der_decode_Integer(DER) ->
+    element(2, 'OTP-PUB-KEY':decode('CertificateSerialNumber',
+                                    <<2, (byte_size(DER)):8, DER/binary>>)).
+
 
 %% InvalidityDate is derived from GeneralizedTime
 der_encode_GeneralizedTime({{Year, Month, Day}, _}) ->
@@ -224,6 +255,15 @@ der_encode_GeneralizedTime({{Year, Month, Day}, _}) ->
         element(2, 'OTP-PUB-KEY':encode('InvalidityDate', TimeString)),
     {T, V}.
 
+der_decode_GeneralizedTime(DER) ->
+    [Y1,Y2,Y3,Y4,M1,M2,D1,D2,H1,H2,48,48,48,48,90] =
+        element(2, 'OTP-PUB-KEY':decode('InvalidityDate',
+                                        <<24, (byte_size(DER)):8, DER/binary>>)),
+    {{list_to_integer([Y1,Y2,Y3,Y4]),
+      list_to_integer([M1,M2]),
+      list_to_integer([D1,D2])},
+     {list_to_integer([H1,H2]), 0, 0}}.
+
 
 %% EmailAddress is derived from IA5String
 der_encode_IA5String(String) ->
@@ -231,12 +271,20 @@ der_encode_IA5String(String) ->
         element(2, 'OTP-PUB-KEY':encode('EmailAddress', String)),
     {T, V}.
 
+der_decode_IA5String(DER) ->
+    element(2, 'OTP-PUB-KEY':decode('EmailAddress',
+                                    <<22, (byte_size(DER)):8, DER/binary>>)).
+
 
 %% CertPolicyId is derived from ObjectIdentifier
 der_encode_ObjectIdentifier(Id) ->
     <<T:8, _L:8, V/binary>> =
         element(2, 'OTP-PUB-KEY':encode('CertPolicyId', Id)),
     {T, V}.
+
+der_decode_ObjectIdentifier(DER) ->
+    element(2, 'OTP-PUB-KEY':decode('CertPolicyId',
+                                    <<6, (byte_size(DER)):8, DER/binary>>)).
 
 
 ext_authKeyId(#'OTPCertificate'{tbsCertificate = TBS}) ->
