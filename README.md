@@ -15,13 +15,7 @@ For Linux:
 rebar3 compile
 ```
 
-Used within GRiSP toolchain when included as dependency:
-
-```
-rebar3 grisp build
-```
-
-For local testing on GRiSP when used as standalone release:
+For local testing on GRiSP2 when used as standalone release:
 
 ```
 GRISP=1 rebar3 grisp build
@@ -68,6 +62,6 @@ Notes
 * The signature size is 64 bytes max, hence you should sign the device certificate over the P-256 curve
 * The above point means that you need to use a P-256 based CA key
 * The validity dates must align with an expire time of years, e.g. multiples of 365 days
-* Like OpenSSL we use utcTime before (including) 2049 and generalTime afterwards
+* Like OpenSSL we use utcTime before (including) 2049 and generalTime afterwards for certificate validity
 
 [1] https://ww1.microchip.com/downloads/en/Appnotes/20006367A.pdf
