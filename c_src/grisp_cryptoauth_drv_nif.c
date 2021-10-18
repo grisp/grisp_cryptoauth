@@ -519,7 +519,7 @@ static ERL_NIF_TERM gen_random_bytes_nif(ErlNifEnv* env, int argc, const ERL_NIF
     INIT_DEVICE;
 
     uint8_t random_bytes[32];
-    EXEC_CA_FUN(atcab_random_ext, DEVICE, &random_bytes);
+    EXEC_CA_FUN(atcab_random_ext, DEVICE, (uint8_t *) &random_bytes);
 
     ERL_NIF_TERM bin_random_bytes;
     BINARY_FROM_RAW(env, bin_random_bytes, random_bytes, 32);
