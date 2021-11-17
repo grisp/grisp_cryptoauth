@@ -7,19 +7,9 @@ Build
 -----
 
 This is meant to be build within the GRiSP2 toolchain or on a linux distribution
-with cryptoauthlib installed.
+with cryptoauthlib installed, build within the `grisp_linux_builder`.
 
-For Linux:
-
-```
-rebar3 compile
-```
-
-For local testing on GRiSP2 when used as standalone release:
-
-```
-GRISP=1 rebar3 grisp build
-```
+Just add it as dependency in rebar3 in your main application.
 
 
 Support
