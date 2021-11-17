@@ -1,1 +1,0 @@
-../../../../../c_src/grisp_cryptoauth_drv_nif.c
