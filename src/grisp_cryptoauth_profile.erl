@@ -14,7 +14,7 @@ tls_client(IssuerCert, {IssueDate, ExpireYears}, Subject, DERPubKey, GrispMeta) 
         signature = grisp_cryptoauth_cert:sigAlg(),
         issuer = IssuerCertTBS#'OTPTBSCertificate'.subject,
         validity = grisp_cryptoauth_cert:validity(IssueDate, ExpireYears),
-        subject = Subject,
+        subject = grisp_cryptoauth_cert:distinguished_name(Subject),
         subjectPublicKeyInfo = grisp_cryptoauth_cert:subPubKeyInfo(DERPubKey),
         extensions = grisp_cryptoauth_cert:build_standard_ext([
             {ext_isCa, false},
