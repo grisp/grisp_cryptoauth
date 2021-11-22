@@ -1,7 +1,5 @@
 -module(grisp_cryptoauth_template).
 
--include_lib("public_key/include/public_key.hrl").
-
 -export([grisp2/0, test/0]).
 
 
@@ -13,12 +11,9 @@ grisp2() ->
     {ok, DERPubKey} = grisp_cryptoauth:public_key(primary),
     {ok, GrispMeta} = grisp_hw:eeprom_read(),
     Serial = maps:get(grisp_serial, GrispMeta),
-    Subject = {rdnSequence, [[
-        #'AttributeTypeAndValue'{
-            type = ?'id-at-commonName',
-            value = {utf8String, "GRiSP2 " ++ integer_to_list(Serial)}
-        }
-    ]]},
+    Subject = grisp_cryptoauth_cert:distinguished_name(
+                #{'id-at-commonName' => "GRiSP2 " ++ integer_to_list(Serial)}
+               ),
     grisp_cryptoauth_profile:tls_client(IssuerCert, IssueDateInfo,
                                         Subject, DERPubKey, GrispMeta).
 
@@ -30,7 +25,7 @@ test() ->
     IssuerCert = grisp_cryptoauth_cert:decode_pem(
                    grisp_cryptoauth_known_certs:test_intermediate()),
     IssueDateInfo = {{{2021,9,1}, {0,0,0}}, no_expiration},
-    Subject = grisp_cryptoauth_cert:rdn_sequence(
+    Subject = grisp_cryptoauth_cert:distinguished_name(
                 #{'id-at-commonName' => "client"}
                ),
     DERPubKey = <<4,109,220,77,238,124,58,236,54,132,168,190,179,110,123,161,

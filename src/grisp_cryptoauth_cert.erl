@@ -10,7 +10,7 @@
          compress/3,
          decompress/2,
          print/1,
-         rdn_sequence/1,
+         distinguished_name/1,
          add_years/2,
          subPubKeyInfo/1,
          sigAlg/0,
@@ -226,7 +226,7 @@ decompress_date(<<Year:1/unsigned-integer-unit:5,
 print(#'OTPCertificate'{} = Cert) ->
     io:format("~s", [encode_pem(Cert)]).
 
-rdn_sequence(Map) when is_map(Map) ->
+distinguished_name(Map) when is_map(Map) ->
     {rdnSequence, [
         lists:map(fun attribute_type_and_value/1, maps:to_list(Map))
                   ]}.
