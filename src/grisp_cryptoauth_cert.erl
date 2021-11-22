@@ -390,7 +390,7 @@ attribute_type_and_value({Key, Value}) ->
                     _ -> utf8String
                 end,
     #'AttributeTypeAndValue'{
-       type = attribute_type(Key),
+       type = Type,
        value = {ValueType, Value}
       }.
 
