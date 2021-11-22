@@ -386,21 +386,88 @@ create_date_vars({generalTime, [Y1,Y2,Y3,Y4,M1,M2,D1,D2,H1,H2,48,48,48,48,90]}) 
     Hour =  list_to_integer([H1,H2]),
     {Year, Month, Day, Hour}.
 
-attribute_type('id-at-name') -> ?'id-at-name';
-attribute_type('id-at-surname') -> ?'id-at-surname';
-attribute_type('id-at-givenName') -> ?'id-at-givenName';
-attribute_type('id-at-initials') -> ?'id-at-initials';
-attribute_type('id-at-generationQualifier') -> ?'id-at-generationQualifier';
-attribute_type('id-at-commonName') -> ?'id-at-commonName';
-attribute_type('id-at-localityName') -> ?'id-at-localityName';
-attribute_type('id-at-stateOrProvinceName') -> ?'id-at-stateOrProvinceName';
-attribute_type('id-at-organizationName') -> ?'id-at-organizationName';
-attribute_type('id-at-organizationalUnitName') -> ?'id-at-organizationalUnitName';
-attribute_type('id-at-title') -> ?'id-at-title';
-attribute_type('id-at-dnQualifier') -> ?'id-at-dnQualifier';
-attribute_type('id-at-countryName') -> ?'id-at-countryName';
-attribute_type('id-at-serialNumber') -> ?'id-at-serialNumber';
-attribute_type('id-at-pseudonym') -> ?'id-at-pseudonym';
-attribute_type('id-domainComponent') -> ?'id-domainComponent';
-attribute_type('id-emailAddress') -> ?'id-emailAddress';
+attribute_type(Type) when Type =:= 'id-at-name';
+                          Type =:= 'name';
+                          Type =:= "name" ->
+    ?'id-at-name';
+attribute_type(Type) when Type =:= 'id-at-surname';
+                          Type =:= 'surname';
+                          Type =:= 'SN';
+                          Type =:= "surname";
+                          Type =:= "SN" ->
+    ?'id-at-surname';
+attribute_type(Type) when Type =:= 'id-at-givenName';
+                          Type =:= 'givenName';
+                          Type =:= 'GN';
+                          Type =:= "givenName";
+                          Type =:= "GN" ->
+    ?'id-at-givenName';
+attribute_type(Type) when Type =:= 'id-at-initials';
+                          Type =:= 'initials';
+                          Type =:= "initials" ->
+    ?'id-at-initials';
+attribute_type(Type) when Type =:= 'id-at-generationQualifier';
+                          Type =:= 'generationQualifier';
+                          Type =:= "generationQualifier" ->
+    ?'id-at-generationQualifier';
+attribute_type(Type) when Type =:= 'id-at-commonName';
+                          Type =:= 'commonName';
+                          Type =:= 'CN';
+                          Type =:= "commonName";
+                          Type =:= "CN" ->
+    ?'id-at-commonName';
+attribute_type(Type) when Type =:= 'id-at-localityName';
+                          Type =:= 'localityName';
+                          Type =:= 'L';
+                          Type =:= "localityName";
+                          Type =:= "L" ->
+    ?'id-at-localityName';
+attribute_type(Type) when Type =:= 'id-at-stateOrProvinceName';
+                          Type =:= 'stateOrProvinceName';
+                          Type =:= 'ST';
+                          Type =:= "stateOrProvinceName";
+                          Type =:= "ST" ->
+    ?'id-at-stateOrProvinceName';
+attribute_type(Type) when Type =:= 'id-at-organizationName';
+                          Type =:= 'organizationName';
+                          Type =:= 'O';
+                          Type =:= "organizationName";
+                          Type =:= "O" ->
+    ?'id-at-organizationName';
+attribute_type(Type) when Type =:= 'id-at-organizationalUnitName';
+                          Type =:= 'organizationalUnitName';
+                          Type =:= 'OU';
+                          Type =:= "organizationalUnitName";
+                          Type =:= "OU" ->
+    ?'id-at-organizationalUnitName';
+attribute_type(Type) when Type =:= 'id-at-title';
+                          Type =:= 'title';
+                          Type =:= "title" ->
+    ?'id-at-title';
+attribute_type(Type) when Type =:= 'id-at-dnQualifier';
+                          Type =:= 'dnQualifier';
+                          Type =:= "dnQualifier" ->
+    ?'id-at-dnQualifier';
+attribute_type(Type) when Type =:= 'id-at-countryName';
+                          Type =:= 'countryName';
+                          Type =:= 'C';
+                          Type =:= "countryName";
+                          Type =:= "C" ->
+    ?'id-at-countryName';
+attribute_type(Type) when Type =:= 'id-at-serialNumber';
+                          Type =:= 'serialNumber';
+                          Type =:= "serialNumber" ->
+    ?'id-at-serialNumber';
+attribute_type(Type) when Type =:= 'id-at-pseudonym';
+                          Type =:= 'pseudonym';
+                          Type =:= "pseudonym" ->
+    ?'id-at-pseudonym';
+attribute_type(Type) when Type =:= 'id-domainComponent';
+                          Type =:= 'domainComponent';
+                          Type =:= "domainComponent" ->
+    ?'id-domainComponent';
+attribute_type(Type) when Type =:= 'id-emailAddress';
+                          Type =:= 'emailAddress';
+                          Type =:= "emailAddress" ->
+    ?'id-emailAddress';
 attribute_type(Type) -> Type.
