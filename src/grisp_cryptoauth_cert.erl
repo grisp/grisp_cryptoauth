@@ -227,14 +227,9 @@ print(#'OTPCertificate'{} = Cert) ->
     io:format("~s", [encode_pem(Cert)]).
 
 rdn_sequence(Map) when is_map(Map) ->
-    Fun = fun({Key, Value}) ->
-                  % TODO: support further value types
-                  #'AttributeTypeAndValue'{
-                     type = attribute_type(Key),
-                     value = {utf8String, Value}
-                    }
-          end,
-    {rdnSequence, [lists:map(Fun, maps:to_list(Map))]}.
+    {rdnSequence, [
+        lists:map(fun attribute_type_and_value/1, maps:to_list(Map))
+                  ]}.
 
 %%%%%%%%%%%%%%
 %% HELPER
@@ -385,6 +380,19 @@ create_date_vars({generalTime, [Y1,Y2,Y3,Y4,M1,M2,D1,D2,H1,H2,48,48,48,48,90]}) 
     Day =   list_to_integer([D1,D2]),
     Hour =  list_to_integer([H1,H2]),
     {Year, Month, Day, Hour}.
+
+attribute_type_and_value({Key, Value}) ->
+    Type = attribute_type(Key),
+    ValueType = case Type of
+                    ?'id-at-dnQualifier'  -> printableString;
+                    ?'id-at-countryName'  -> printableString;
+                    ?'id-at-serialNumber' -> printableString;
+                    _ -> utf8String
+                end,
+    #'AttributeTypeAndValue'{
+       type = attribute_type(Key),
+       value = {ValueType, Value}
+      }.
 
 attribute_type(Type) when Type =:= 'id-at-name';
                           Type =:= 'name';
