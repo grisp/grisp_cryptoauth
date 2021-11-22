@@ -10,6 +10,7 @@
          compress/3,
          decompress/2,
          print/1,
+         rdn_sequence/1,
          add_years/2,
          subPubKeyInfo/1,
          sigAlg/0,
@@ -225,6 +226,15 @@ decompress_date(<<Year:1/unsigned-integer-unit:5,
 print(#'OTPCertificate'{} = Cert) ->
     io:format("~s", [encode_pem(Cert)]).
 
+rdn_sequence(Map) when is_map(Map) ->
+    Fun = fun({Key, Value}) ->
+                  % TODO: support further value types
+                  #'AttributeTypeAndValue'{
+                     type = attribute_type(Key),
+                     value = {utf8String, Value}
+                    }
+          end,
+    {rdnSequence, [lists:map(Fun, maps:to_list(Map))]}.
 
 %%%%%%%%%%%%%%
 %% HELPER
@@ -375,3 +385,22 @@ create_date_vars({generalTime, [Y1,Y2,Y3,Y4,M1,M2,D1,D2,H1,H2,48,48,48,48,90]}) 
     Day =   list_to_integer([D1,D2]),
     Hour =  list_to_integer([H1,H2]),
     {Year, Month, Day, Hour}.
+
+attribute_type('id-at-name') -> ?'id-at-name';
+attribute_type('id-at-surname') -> ?'id-at-surname';
+attribute_type('id-at-givenName') -> ?'id-at-givenName';
+attribute_type('id-at-initials') -> ?'id-at-initials';
+attribute_type('id-at-generationQualifier') -> ?'id-at-generationQualifier';
+attribute_type('id-at-commonName') -> ?'id-at-commonName';
+attribute_type('id-at-localityName') -> ?'id-at-localityName';
+attribute_type('id-at-stateOrProvinceName') -> ?'id-at-stateOrProvinceName';
+attribute_type('id-at-organizationName') -> ?'id-at-organizationName';
+attribute_type('id-at-organizationalUnitName') -> ?'id-at-organizationalUnitName';
+attribute_type('id-at-title') -> ?'id-at-title';
+attribute_type('id-at-dnQualifier') -> ?'id-at-dnQualifier';
+attribute_type('id-at-countryName') -> ?'id-at-countryName';
+attribute_type('id-at-serialNumber') -> ?'id-at-serialNumber';
+attribute_type('id-at-pseudonym') -> ?'id-at-pseudonym';
+attribute_type('id-domainComponent') -> ?'id-domainComponent';
+attribute_type('id-emailAddress') -> ?'id-emailAddress';
+attribute_type(Type) -> Type.
