@@ -314,10 +314,13 @@ ext_subKeyId(PubKeyBlob) ->
        extnValue = crypto:hash(sha, PubKeyBlob)}.
 
 
+%% see RFC5280 4.2.1.3
+%% for CAs the extension SHOULD be critical
 ext_keyUsage(UsageList) ->
     #'Extension'{
        extnID = ?'id-ce-keyUsage',
-       extnValue = UsageList}.
+       extnValue = UsageList,
+       critical = lists:member(keyCertSign, UsageList)}.
 
 
 ext_extKeyUsage(client) ->
@@ -330,10 +333,14 @@ ext_extKeyUsage(server) ->
        extnValue = [?'id-kp-serverAuth']}.
 
 
+%% see RFC5280 4.2.1.9
+%% for CAs this extension MUST be critical, also
+%% we don't care about validation path lengths
 ext_isCa(IsCA) ->
     #'Extension'{
        extnID = ?'id-ce-basicConstraints',
-       extnValue = #'BasicConstraints'{cA = IsCA}}.
+       extnValue = #'BasicConstraints'{cA = IsCA},
+       critical = IsCA}.
 
 
 calc_expire_years(#'Validity'{notAfter = ?MAX_NOT_AFTER}) ->
