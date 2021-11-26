@@ -60,12 +60,12 @@ encode_pem(#'OTPCertificate'{} = Cert) ->
 
 sign(#'OTPTBSCertificate'{} = TBS, SignFun) when is_function(SignFun) ->
     DER = public_key:pkix_encode('OTPTBSCertificate', TBS, otp),
-    %% expect DER enoded Signature here for now
-    DERSig = SignFun(DER),
-    #'OTPCertificate'{
-       tbsCertificate = TBS,
-       signatureAlgorithm = TBS#'OTPTBSCertificate'.signature,
-       signature = DERSig};
+    Sig = SignFun(DER), %% expect bare signature here
+    build_cert_from_tbs(TBS, Sig);
+sign(#'OTPTBSCertificate'{} = TBS, {node, Node}) ->
+    DER = public_key:pkix_encode('OTPTBSCertificate', TBS, otp),
+    {ok, Sig} = rpc:call(Node, grisp_cryptoauth, sign, [primary, DER]),
+    build_cert_from_tbs(TBS, Sig);
 sign(#'OTPTBSCertificate'{} = TBS, PrivateKey) ->
     public_key:pkix_decode_cert(
       public_key:pkix_sign(TBS, PrivateKey), otp);
@@ -73,7 +73,6 @@ sign({Mod, Fun}, SignFunOrPrivateKey) ->
     sign(Mod:Fun(undefined), SignFunOrPrivateKey);
 sign(Fun, SignFunOrPrivateKey) when is_atom(Fun) ->
     sign(grisp_cryptoauth_template:Fun(undefined), SignFunOrPrivateKey).
-
 
 sigAlg() ->
     #'SignatureAlgorithm'{algorithm = ?'ecdsa-with-SHA256'}.
@@ -389,6 +388,19 @@ create_date_vars({generalTime, [Y1,Y2,Y3,Y4,M1,M2,D1,D2,H1,H2,48,48,48,48,90]}) 
     Day =   list_to_integer([D1,D2]),
     Hour =  list_to_integer([H1,H2]),
     {Year, Month, Day, Hour}.
+
+
+build_cert_from_tbs(TBS,
+                    <<R:32/big-unsigned-integer-unit:8,
+                      S:32/big-unsigned-integer-unit:8>>) ->
+    Sig = #'ECDSA-Sig-Value'{r = R, s = S},
+    DERSig = public_key:der_encode('ECDSA-Sig-Value', Sig),
+    #'OTPCertificate'{
+       tbsCertificate = TBS,
+       signatureAlgorithm = TBS#'OTPTBSCertificate'.signature,
+       signature = DERSig
+    }.
+
 
 attribute_type_and_value({Key, Value}) ->
     Type = attribute_type(Key),
