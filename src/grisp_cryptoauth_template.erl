@@ -1,9 +1,9 @@
 -module(grisp_cryptoauth_template).
 
--export([grisp2_device/0,
-         grisp2_intermediate/0,
-         stritzinger_root/0,
-         test/0]).
+-export([grisp2_device/1,
+         grisp2_intermediate/1,
+         stritzinger_root/1,
+         test/1]).
 
 
 -define(SERIAL_STRITZINGER_ROOT_CA, 1).
@@ -11,12 +11,12 @@
 
 
 %% GRiSP2 device certificate.
-grisp2_device() ->
-    %% needs to be replaced by GRiSP2 intermediate CA certificate
-    IssuerCert = grisp_cryptoauth_cert:decode_pem(
-                   grisp_cryptoauth_known_certs:test_intermediate()),
+grisp2_device(Context) ->
+    IssuerCertFile = code:priv_dir(grisp_cryptoauth) ++ "/grisp2_ca.pem",
+    {ok, IssuerCertPEM} = file:read_file(IssuerCertFile),
+    IssuerCert = grisp_cryptoauth_cert:decode_pem(IssuerCertPEM),
     Validity = {{{2021,9,1}, {0,0,0}}, no_expiration},
-    {ok, DERPubKey} = grisp_cryptoauth:public_key(primary),
+    {ok, DERPubKey} = grisp_cryptoauth:public_key(Context, primary),
     {ok, GrispMeta} = grisp_hw:eeprom_read(),
     %% The device serial is also used for the certificate serial, simply
     %% because it is unique integer. If we want to use other serials in
@@ -33,12 +33,12 @@ grisp2_device() ->
 
 
 %% GRiSP2 intermediate CA certificate.
-grisp2_intermediate() ->
-    %% needs to be replaced by Stritzinger root CA certificate
-    IssuerCert = grisp_cryptoauth_cert:decode_pem(
-                   grisp_cryptoauth_known_certs:test_intermediate()),
+grisp2_intermediate(Context) ->
+    IssuerCertFile = code:priv_dir(grisp_cryptoauth) ++ "/stritzinger_root.pem",
+    {ok, IssuerCertPEM} = file:read_file(IssuerCertFile),
+    IssuerCert = grisp_cryptoauth_cert:decode_pem(IssuerCertPEM),
     Validity = {{{2021,9,1}, {0,0,0}}, no_expiration},
-    {ok, DERPubKey} = grisp_cryptoauth:public_key(primary),
+    {ok, DERPubKey} = grisp_cryptoauth:public_key(Context, primary),
     Serial = ?SERIAL_INTERMEDIATE_CA,
     Subject = #{
         'CN' => "GRiSP2 CA",
@@ -50,9 +50,9 @@ grisp2_intermediate() ->
 
 
 %% Stritzinger root CA certificate.
-stritzinger_root() ->
+stritzinger_root(Context) ->
     Validity = {{{2021,9,1}, {0,0,0}}, no_expiration},
-    {ok, DERPubKey} = grisp_cryptoauth:public_key(primary),
+    {ok, DERPubKey} = grisp_cryptoauth:public_key(Context, primary),
     Serial = ?SERIAL_STRITZINGER_ROOT_CA,
     Subject = #{
         'CN' => "Stritzinger Root CA",
@@ -67,9 +67,10 @@ stritzinger_root() ->
 
 %% Just used for testing, no access to issuer certificate, Secure Element
 %% or EEPROM needed. Compile .erl files locally and execute this function.
-test() ->
-    IssuerCert = grisp_cryptoauth_cert:decode_pem(
-                   grisp_cryptoauth_known_certs:test_intermediate()),
+test(_Context) ->
+    IssuerCertFile = code:priv_dir(grisp_cryptoauth) ++ "/cert_test/intermediate_cert.pem",
+    {ok, IssuerCertPEM} = file:read_file(IssuerCertFile),
+    IssuerCert = grisp_cryptoauth_cert:decode_pem(IssuerCertPEM),
     Validity = {{{2021,9,1}, {0,0,0}}, no_expiration},
     Subject = #{'CN' => "client"},
     DERPubKey = <<4,109,220,77,238,124,58,236,54,132,168,190,179,110,123,161,

@@ -101,6 +101,8 @@ verify(Context, PubKey, Msg, Sig) when is_binary(PubKey) or is_list(PubKey) ->
 public_key(Type) ->
     ?CALL_API_SERVER([Type]).
 
+public_key(undefined, Type) ->
+    public_key(Type);
 public_key(Context, primary) ->
     do_public_key(Context, ?PRIMARY_PRIVATE_KEY);
 public_key(Context, secondary_1) ->
@@ -160,9 +162,9 @@ read_cert(Context, Slot, DerOrPlain) when is_integer(Slot) ->
         {_, TBSFunName} ->
             TBS = case TBSFunName of
                       {Mod, Fun} ->
-                          Mod:Fun();
+                          Mod:Fun(Context);
                       _ ->
-                          grisp_cryptoauth_template:TBSFunName()
+                          grisp_cryptoauth_template:TBSFunName(Context)
                   end,
             Cert = grisp_cryptoauth_cert:decompress(TBS, CompCert),
             case DerOrPlain of

@@ -70,9 +70,9 @@ sign(#'OTPTBSCertificate'{} = TBS, PrivateKey) ->
     public_key:pkix_decode_cert(
       public_key:pkix_sign(TBS, PrivateKey), otp);
 sign({Mod, Fun}, SignFunOrPrivateKey) ->
-    sign(Mod:Fun(), SignFunOrPrivateKey);
+    sign(Mod:Fun(undefined), SignFunOrPrivateKey);
 sign(Fun, SignFunOrPrivateKey) when is_atom(Fun) ->
-    sign(grisp_cryptoauth_template:Fun(), SignFunOrPrivateKey).
+    sign(grisp_cryptoauth_template:Fun(undefined), SignFunOrPrivateKey).
 
 
 sigAlg() ->
@@ -175,6 +175,8 @@ compress(Cert, TemplateId, ChainId) ->
       0:16, TemplateId:4, ChainId:4, 0:16>>.
 
 
+compress_sig(Sig) when byte_size(Sig) =:= 64 ->
+    Sig;    %% was not DER encoded
 compress_sig(Sig) ->
     #'ECDSA-Sig-Value'{r = R, s = S} = public_key:der_decode('ECDSA-Sig-Value', Sig),
     <<R:32/big-unsigned-integer-unit:8, S:32/big-unsigned-integer-unit:8>>.
@@ -390,16 +392,18 @@ create_date_vars({generalTime, [Y1,Y2,Y3,Y4,M1,M2,D1,D2,H1,H2,48,48,48,48,90]}) 
 
 attribute_type_and_value({Key, Value}) ->
     Type = attribute_type(Key),
-    ValueType = case Type of
-                    ?'id-at-dnQualifier'  -> printableString;
-                    ?'id-at-countryName'  -> printableString;
-                    ?'id-at-serialNumber' -> printableString;
-                    _ -> utf8String
+    AttrValue = case Type of
+                    ?'id-at-dnQualifier'    -> Value;  %% printableString
+                    ?'id-at-countryName'    -> Value;  %% printableString
+                    ?'id-at-serialNumber'   -> Value;  %% printableString
+                    ?'id-emailAddress'      -> Value;  %% ia5String
+                    ?'id-domainComponent'   -> Value;  %% ia5String
+                    _ -> {utf8String, Value}
                 end,
     #'AttributeTypeAndValue'{
-       type = Type,
-       value = {ValueType, Value}
-      }.
+       type  = Type,
+       value = AttrValue
+    }.
 
 attribute_type(Type) when Type =:= 'id-at-name';
                           Type =:= 'name';
