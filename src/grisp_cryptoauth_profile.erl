@@ -57,6 +57,7 @@ root_ca(Serial, {IssueDate, ExpireYears}, Subject, DERPubKey) ->
         subjectPublicKeyInfo = grisp_cryptoauth_cert:subPubKeyInfo(DERPubKey),
         extensions = grisp_cryptoauth_cert:build_standard_ext([
             {ext_isCa, true},
-            {ext_subKeyId, DERPubKey}
+            {ext_subKeyId, DERPubKey},
+            {ext_keyUsage, [keyCertSign, cRLSign]}
         ])
     }.
