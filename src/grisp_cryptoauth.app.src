@@ -16,5 +16,5 @@
   {licenses, ["Apache License 2.0"]},
   {links,
    [{"Homepage", "https://www.grisp.org"},
-    {"GitHub", "https://github.com/grisp/grisp_cryptoauth"}]},
+    {"GitHub", "https://github.com/grisp/grisp_cryptoauth"}]}
  ]}.
