@@ -3,8 +3,8 @@
 -include_lib("public_key/include/public_key.hrl").
 
 %% Public API
--export([decode_pem_file/1,
-         decode_pem/1,
+-export([decode_pem_file/2,
+         decode_pem/2,
          encode_pem/1,
          sign/2,
          compress/3,
@@ -42,11 +42,13 @@
 -define('id-stritzinger-grispProdDate',     {1,3,6,1,4,1,4849,6}).
 
 
-decode_pem_file(FilePath) ->
-    decode_pem(element(2, file:read_file(FilePath))).
+decode_pem_file(FilePath, Type) ->
+    decode_pem(element(2, file:read_file(FilePath)), Type).
 
 
-decode_pem(PEM) ->
+decode_pem(PEM, der) ->
+    element(2, hd(public_key:pem_decode(PEM)));
+decode_pem(PEM, plain) ->
     public_key:pkix_decode_cert(
       element(2, hd(public_key:pem_decode(PEM))), otp).
 

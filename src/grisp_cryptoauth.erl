@@ -2,6 +2,7 @@
 
 %% Main API
 -export([sign/2,
+         sign_fun/1,
          verify/3,
          public_key/1,
          refresh_key/1,
@@ -81,6 +82,14 @@ sign(Context, secondary_2, Msg) ->
     do_sign(Context, ?SECONDARY_PRIVATE_KEY_2, Msg);
 sign(Context, secondary_3, Msg) ->
     do_sign(Context, ?SECONDARY_PRIVATE_KEY_3, Msg).
+
+
+%% Used within patched ssl library for private (primary) key:
+%% {key, #{algorithm => ecdsa, sign_fun => {grisp_cryptoauth, sign_fun}}}
+sign_fun(Msg) ->
+    {ok, Sig} = sign(primary, Msg),
+    <<R:32/big-unsigned-integer-unit:8, S:32/big-unsigned-integer-unit:8>> = Sig,
+    public_key:der_encode('ECDSA-Sig-Value', #'ECDSA-Sig-Value'{r = R, s = S}).
 
 
 verify(Type, Msg, Sig) ->
