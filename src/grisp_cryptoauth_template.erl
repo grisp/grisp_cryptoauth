@@ -14,7 +14,7 @@
 grisp2_device(Context) ->
     IssuerCertFile = code:priv_dir(grisp_cryptoauth) ++ "/grisp2_ca.pem",
     {ok, IssuerCertPEM} = file:read_file(IssuerCertFile),
-    IssuerCert = grisp_cryptoauth_cert:decode_pem(IssuerCertPEM),
+    IssuerCert = grisp_cryptoauth_cert:decode_pem(IssuerCertPEM, plain),
     Validity = {{{2021,9,1}, {0,0,0}}, no_expiration},
     {ok, DERPubKey} = grisp_cryptoauth:public_key(Context, primary),
     {ok, GrispMeta} = grisp_hw:eeprom_read(),
@@ -36,7 +36,7 @@ grisp2_device(Context) ->
 grisp2_intermediate(Context) ->
     IssuerCertFile = code:priv_dir(grisp_cryptoauth) ++ "/stritzinger_root.pem",
     {ok, IssuerCertPEM} = file:read_file(IssuerCertFile),
-    IssuerCert = grisp_cryptoauth_cert:decode_pem(IssuerCertPEM),
+    IssuerCert = grisp_cryptoauth_cert:decode_pem(IssuerCertPEM, plain),
     Validity = {{{2021,9,1}, {0,0,0}}, no_expiration},
     {ok, DERPubKey} = grisp_cryptoauth:public_key(Context, primary),
     Serial = ?SERIAL_INTERMEDIATE_CA,
@@ -70,7 +70,7 @@ stritzinger_root(Context) ->
 test(_Context) ->
     IssuerCertFile = code:priv_dir(grisp_cryptoauth) ++ "/cert_test/intermediate_cert.pem",
     {ok, IssuerCertPEM} = file:read_file(IssuerCertFile),
-    IssuerCert = grisp_cryptoauth_cert:decode_pem(IssuerCertPEM),
+    IssuerCert = grisp_cryptoauth_cert:decode_pem(IssuerCertPEM, plain),
     Validity = {{{2021,9,1}, {0,0,0}}, no_expiration},
     Subject = #{'CN' => "client"},
     DERPubKey = <<4,109,220,77,238,124,58,236,54,132,168,190,179,110,123,161,
