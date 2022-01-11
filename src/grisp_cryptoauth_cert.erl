@@ -326,7 +326,7 @@ der_decode_ObjectIdentifier(DER) ->
 
 ext_authKeyId(#'OTPCertificate'{tbsCertificate = TBS}) ->
     SerialNumber = TBS#'OTPTBSCertificate'.serialNumber,
-    RDNSequence = TBS#'OTPTBSCertificate'.subject,
+    RDNSequence = TBS#'OTPTBSCertificate'.issuer,
     Extensions = TBS#'OTPTBSCertificate'.extensions,
     #'Extension'{extnValue = SubjectKeyId} =
         lists:keyfind(?'id-ce-subjectKeyIdentifier', 2, Extensions),
