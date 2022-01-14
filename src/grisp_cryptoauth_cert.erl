@@ -3,13 +3,14 @@
 -include_lib("public_key/include/public_key.hrl").
 
 %% Public API
--export([decode_pem_file/1,
-         decode_pem/1,
+-export([decode_pem_file/2,
+         decode_pem/2,
          encode_pem/1,
          sign/2,
          compress/3,
          decompress/2,
          print/1,
+         distinguished_name/1,
          add_years/2,
          subPubKeyInfo/1,
          sigAlg/0,
@@ -41,11 +42,13 @@
 -define('id-stritzinger-grispProdDate',     {1,3,6,1,4,1,4849,6}).
 
 
-decode_pem_file(FilePath) ->
-    decode_pem(element(2, file:read_file(FilePath))).
+decode_pem_file(FilePath, Type) ->
+    decode_pem(element(2, file:read_file(FilePath)), Type).
 
 
-decode_pem(PEM) ->
+decode_pem(PEM, der) ->
+    element(2, hd(public_key:pem_decode(PEM)));
+decode_pem(PEM, plain) ->
     public_key:pkix_decode_cert(
       element(2, hd(public_key:pem_decode(PEM))), otp).
 
@@ -59,20 +62,19 @@ encode_pem(#'OTPCertificate'{} = Cert) ->
 
 sign(#'OTPTBSCertificate'{} = TBS, SignFun) when is_function(SignFun) ->
     DER = public_key:pkix_encode('OTPTBSCertificate', TBS, otp),
-    %% expect DER enoded Signature here for now
-    DERSig = SignFun(DER),
-    #'OTPCertificate'{
-       tbsCertificate = TBS,
-       signatureAlgorithm = TBS#'OTPTBSCertificate'.signature,
-       signature = DERSig};
+    Sig = SignFun(DER), %% expect bare signature here
+    build_cert_from_tbs(TBS, Sig);
+sign(#'OTPTBSCertificate'{} = TBS, {node, Node}) ->
+    DER = public_key:pkix_encode('OTPTBSCertificate', TBS, otp),
+    {ok, Sig} = rpc:call(Node, grisp_cryptoauth, sign, [primary, DER]),
+    build_cert_from_tbs(TBS, Sig);
 sign(#'OTPTBSCertificate'{} = TBS, PrivateKey) ->
     public_key:pkix_decode_cert(
       public_key:pkix_sign(TBS, PrivateKey), otp);
 sign({Mod, Fun}, SignFunOrPrivateKey) ->
-    sign(Mod:Fun(), SignFunOrPrivateKey);
+    sign(Mod:Fun(undefined), SignFunOrPrivateKey);
 sign(Fun, SignFunOrPrivateKey) when is_atom(Fun) ->
-    sign(grisp_cryptoauth_template:Fun(), SignFunOrPrivateKey).
-
+    sign(grisp_cryptoauth_template:Fun(undefined), SignFunOrPrivateKey).
 
 sigAlg() ->
     #'SignatureAlgorithm'{algorithm = ?'ecdsa-with-SHA256'}.
@@ -174,6 +176,8 @@ compress(Cert, TemplateId, ChainId) ->
       0:16, TemplateId:4, ChainId:4, 0:16>>.
 
 
+compress_sig(Sig) when byte_size(Sig) =:= 64 ->
+    Sig;    %% was not DER encoded
 compress_sig(Sig) ->
     #'ECDSA-Sig-Value'{r = R, s = S} = public_key:der_decode('ECDSA-Sig-Value', Sig),
     <<R:32/big-unsigned-integer-unit:8, S:32/big-unsigned-integer-unit:8>>.
@@ -225,6 +229,10 @@ decompress_date(<<Year:1/unsigned-integer-unit:5,
 print(#'OTPCertificate'{} = Cert) ->
     io:format("~s", [encode_pem(Cert)]).
 
+distinguished_name(Map) when is_map(Map) ->
+    {rdnSequence, [
+        lists:map(fun attribute_type_and_value/1, maps:to_list(Map))
+                  ]}.
 
 %%%%%%%%%%%%%%
 %% HELPER
@@ -309,10 +317,13 @@ ext_subKeyId(PubKeyBlob) ->
        extnValue = crypto:hash(sha, PubKeyBlob)}.
 
 
+%% see RFC5280 4.2.1.3
+%% for CAs the extension SHOULD be critical
 ext_keyUsage(UsageList) ->
     #'Extension'{
        extnID = ?'id-ce-keyUsage',
-       extnValue = UsageList}.
+       extnValue = UsageList,
+       critical = lists:member(keyCertSign, UsageList)}.
 
 
 ext_extKeyUsage(client) ->
@@ -325,10 +336,14 @@ ext_extKeyUsage(server) ->
        extnValue = [?'id-kp-serverAuth']}.
 
 
+%% see RFC5280 4.2.1.9
+%% for CAs this extension MUST be critical, also
+%% we don't care about validation path lengths
 ext_isCa(IsCA) ->
     #'Extension'{
        extnID = ?'id-ce-basicConstraints',
-       extnValue = #'BasicConstraints'{cA = IsCA}}.
+       extnValue = #'BasicConstraints'{cA = IsCA},
+       critical = IsCA}.
 
 
 calc_expire_years(#'Validity'{notAfter = ?MAX_NOT_AFTER}) ->
@@ -375,3 +390,117 @@ create_date_vars({generalTime, [Y1,Y2,Y3,Y4,M1,M2,D1,D2,H1,H2,48,48,48,48,90]}) 
     Day =   list_to_integer([D1,D2]),
     Hour =  list_to_integer([H1,H2]),
     {Year, Month, Day, Hour}.
+
+
+build_cert_from_tbs(TBS,
+                    <<R:32/big-unsigned-integer-unit:8,
+                      S:32/big-unsigned-integer-unit:8>>) ->
+    Sig = #'ECDSA-Sig-Value'{r = R, s = S},
+    DERSig = public_key:der_encode('ECDSA-Sig-Value', Sig),
+    #'OTPCertificate'{
+       tbsCertificate = TBS,
+       signatureAlgorithm = TBS#'OTPTBSCertificate'.signature,
+       signature = DERSig
+    }.
+
+
+attribute_type_and_value({Key, Value}) ->
+    Type = attribute_type(Key),
+    AttrValue = case Type of
+                    ?'id-at-dnQualifier'    -> Value;  %% printableString
+                    ?'id-at-countryName'    -> Value;  %% printableString
+                    ?'id-at-serialNumber'   -> Value;  %% printableString
+                    ?'id-emailAddress'      -> Value;  %% ia5String
+                    ?'id-domainComponent'   -> Value;  %% ia5String
+                    _ -> {utf8String, Value}
+                end,
+    #'AttributeTypeAndValue'{
+       type  = Type,
+       value = AttrValue
+    }.
+
+attribute_type(Type) when Type =:= 'id-at-name';
+                          Type =:= 'name';
+                          Type =:= "name" ->
+    ?'id-at-name';
+attribute_type(Type) when Type =:= 'id-at-surname';
+                          Type =:= 'surname';
+                          Type =:= 'SN';
+                          Type =:= "surname";
+                          Type =:= "SN" ->
+    ?'id-at-surname';
+attribute_type(Type) when Type =:= 'id-at-givenName';
+                          Type =:= 'givenName';
+                          Type =:= 'GN';
+                          Type =:= "givenName";
+                          Type =:= "GN" ->
+    ?'id-at-givenName';
+attribute_type(Type) when Type =:= 'id-at-initials';
+                          Type =:= 'initials';
+                          Type =:= "initials" ->
+    ?'id-at-initials';
+attribute_type(Type) when Type =:= 'id-at-generationQualifier';
+                          Type =:= 'generationQualifier';
+                          Type =:= "generationQualifier" ->
+    ?'id-at-generationQualifier';
+attribute_type(Type) when Type =:= 'id-at-commonName';
+                          Type =:= 'commonName';
+                          Type =:= 'CN';
+                          Type =:= "commonName";
+                          Type =:= "CN" ->
+    ?'id-at-commonName';
+attribute_type(Type) when Type =:= 'id-at-localityName';
+                          Type =:= 'localityName';
+                          Type =:= 'L';
+                          Type =:= "localityName";
+                          Type =:= "L" ->
+    ?'id-at-localityName';
+attribute_type(Type) when Type =:= 'id-at-stateOrProvinceName';
+                          Type =:= 'stateOrProvinceName';
+                          Type =:= 'ST';
+                          Type =:= "stateOrProvinceName";
+                          Type =:= "ST" ->
+    ?'id-at-stateOrProvinceName';
+attribute_type(Type) when Type =:= 'id-at-organizationName';
+                          Type =:= 'organizationName';
+                          Type =:= 'O';
+                          Type =:= "organizationName";
+                          Type =:= "O" ->
+    ?'id-at-organizationName';
+attribute_type(Type) when Type =:= 'id-at-organizationalUnitName';
+                          Type =:= 'organizationalUnitName';
+                          Type =:= 'OU';
+                          Type =:= "organizationalUnitName";
+                          Type =:= "OU" ->
+    ?'id-at-organizationalUnitName';
+attribute_type(Type) when Type =:= 'id-at-title';
+                          Type =:= 'title';
+                          Type =:= "title" ->
+    ?'id-at-title';
+attribute_type(Type) when Type =:= 'id-at-dnQualifier';
+                          Type =:= 'dnQualifier';
+                          Type =:= "dnQualifier" ->
+    ?'id-at-dnQualifier';
+attribute_type(Type) when Type =:= 'id-at-countryName';
+                          Type =:= 'countryName';
+                          Type =:= 'C';
+                          Type =:= "countryName";
+                          Type =:= "C" ->
+    ?'id-at-countryName';
+attribute_type(Type) when Type =:= 'id-at-serialNumber';
+                          Type =:= 'serialNumber';
+                          Type =:= "serialNumber" ->
+    ?'id-at-serialNumber';
+attribute_type(Type) when Type =:= 'id-at-pseudonym';
+                          Type =:= 'pseudonym';
+                          Type =:= "pseudonym" ->
+    ?'id-at-pseudonym';
+attribute_type(Type) when Type =:= 'id-domainComponent';
+                          Type =:= 'domainComponent';
+                          Type =:= "domainComponent" ->
+    ?'id-domainComponent';
+attribute_type(Type) when Type =:= 'id-emailAddress';
+                          Type =:= 'emailAddress';
+                          Type =:= "emailAddress" ->
+    ?'id-emailAddress';
+attribute_type(Type) -> Type.

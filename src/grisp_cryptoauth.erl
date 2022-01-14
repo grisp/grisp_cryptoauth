@@ -2,6 +2,7 @@
 
 %% Main API
 -export([sign/2,
+         sign_fun/1,
          verify/3,
          public_key/1,
          refresh_key/1,
@@ -83,6 +84,14 @@ sign(Context, secondary_3, Msg) ->
     do_sign(Context, ?SECONDARY_PRIVATE_KEY_3, Msg).
 
 
+%% Used within patched ssl library for private (primary) key:
+%% {key, #{algorithm => ecdsa, sign_fun => {grisp_cryptoauth, sign_fun}}}
+sign_fun(Msg) ->
+    {ok, Sig} = sign(primary, Msg),
+    <<R:32/big-unsigned-integer-unit:8, S:32/big-unsigned-integer-unit:8>> = Sig,
+    public_key:der_encode('ECDSA-Sig-Value', #'ECDSA-Sig-Value'{r = R, s = S}).
+
+
 verify(Type, Msg, Sig) ->
     ?CALL_API_SERVER([Type, Msg, Sig]).
 
@@ -101,6 +110,8 @@ verify(Context, PubKey, Msg, Sig) when is_binary(PubKey) or is_list(PubKey) ->
 public_key(Type) ->
     ?CALL_API_SERVER([Type]).
 
+public_key(undefined, Type) ->
+    public_key(Type);
 public_key(Context, primary) ->
     do_public_key(Context, ?PRIMARY_PRIVATE_KEY);
 public_key(Context, secondary_1) ->
@@ -160,9 +171,9 @@ read_cert(Context, Slot, DerOrPlain) when is_integer(Slot) ->
         {_, TBSFunName} ->
             TBS = case TBSFunName of
                       {Mod, Fun} ->
-                          Mod:Fun();
+                          Mod:Fun(Context);
                       _ ->
-                          grisp_cryptoauth_template:TBSFunName()
+                          grisp_cryptoauth_template:TBSFunName(Context)
                   end,
             Cert = grisp_cryptoauth_cert:decompress(TBS, CompCert),
             case DerOrPlain of

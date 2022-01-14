@@ -1,6 +1,6 @@
 {application, grisp_cryptoauth,
- [{description, "An OTP library"},
-  {vsn, "0.1.0"},
+ [{description, "Secure Element support for linux based on cryptoauthlib"},
+  {vsn, "2.0.0-rc1"},
   {registered, []},
   {applications,
    [kernel,
@@ -12,6 +12,8 @@
   {env,[]},
   {modules, []},
   {mod, {grisp_cryptoauth_app, []}},
-  {licenses, ["Apache 2.0"]},
-  {links, []}
+  {licenses, ["Apache License 2.0"]},
+  {links,
+   [{"Homepage", "https://www.grisp.org"},
+    {"GitHub", "https://github.com/grisp/grisp_cryptoauth"}]}
  ]}.
