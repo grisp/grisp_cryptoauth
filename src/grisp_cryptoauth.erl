@@ -271,11 +271,13 @@ do_refresh_key(Context, SlotIdx) ->
     grisp_cryptoauth_drv:gen_private_key(Context, SlotIdx).
 
 do_setup_device(Context) ->
-    grisp_cryptoauth_drv:write_config(Context),
-    grisp_cryptoauth_drv:lock_config(Context),
-    PrivKeys = [?PRIMARY_PRIVATE_KEY, ?SECONDARY_PRIVATE_KEY_1, ?SECONDARY_PRIVATE_KEY_2, ?SECONDARY_PRIVATE_KEY_3],
-    [grisp_cryptoauth_drv:gen_private_key(Context, SlotIdx) || SlotIdx <- PrivKeys],
-    grisp_cryptoauth_drv:lock_data(Context),
+    ok = grisp_cryptoauth_drv:write_config(Context),
+    ok = grisp_cryptoauth_drv:lock_config(Context),
+    {ok, _} = grisp_cryptoauth_drv:gen_private_key(Context, ?PRIMARY_PRIVATE_KEY),
+    {ok, _} = grisp_cryptoauth_drv:gen_private_key(Context, ?SECONDARY_PRIVATE_KEY_1),
+    {ok, _} = grisp_cryptoauth_drv:gen_private_key(Context, ?SECONDARY_PRIVATE_KEY_2),
+    {ok, _} = grisp_cryptoauth_drv:gen_private_key(Context, ?SECONDARY_PRIVATE_KEY_3),
+    ok = grisp_cryptoauth_drv:lock_data(Context),
     ok.
 
 generate_device_info(Context) ->
