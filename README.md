@@ -3,6 +3,13 @@ grisp_cryptoauth (Linux)
 
 Secure Element (Microchip ATECC608B) support for GRiSP2 based on cryptoauthlib.
 
+Using `grisp_cryptoauth` it is possible to set up TLS connections using private
+keys and certificates stored within the ATECC608B. Both PKCS11 (using Erlang's
+crypto engines) and 'plain' access to the device can be used. The latter currently
+requires an additional patch. RTEMS based GRiSP2 applications can't use PKCS11
+due to restrictions on dynamic libraries.
+
+
 Build
 -----
 
@@ -12,8 +19,8 @@ with cryptoauthlib installed, build within the `grisp_linux_builder`.
 Just add it as dependency in rebar3 in your main application.
 
 
-Support
--------
+Device Support
+--------------
 
 This library follows the ATECC608B-TFLXTLS configuration, that means in particular:
 
@@ -22,6 +29,7 @@ This library follows the ATECC608B-TFLXTLS configuration, that means in particul
 * sign and verify operations on the keys above
 * two (primary and secondary) changable slots for compressed certificates
 * possibility to lock slots if you really want to
+* high quality random byte generator
 
 More to come :).
 
@@ -29,7 +37,10 @@ More to come :).
 Setting up TLS
 --------------
 
-Usually Erlang's `ssl` library is used for setting up TLS/mTLS. For the device
+There is a patch necessary to make use of `grisp_cryptoauth` for TLS. This
+patch is included in this repository and is tested for Erlang `23.3.4.10`.
+
+Erlang's `ssl` library is used for setting up TLS/mTLS. For the device
 you need to honor at least the following options:
 
 ```
@@ -64,6 +75,17 @@ PrivateKey = public_key:generate_key({namedCurve, secp256r1}).
 Cert = grisp_cryptoauth_cert:sign(test, PrivateKey).
 grisp_cryptoauth:write_cert(primary, test, Cert).
 ```
+
+
+Outlook
+-------
+
+This library currently contains functionalities that should be split into
+a couple of new libraries, in particular:
+
+* NIF based library for `cryptoauthlib` supporting more devices
+* certificate handling library, nice glue for Erlang certificate records
+* client package for supporting GRiSP2 SaaS system
 
 
 Notes
