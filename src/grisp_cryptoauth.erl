@@ -7,6 +7,7 @@
          public_key/1,
          refresh_key/1,
          read_cert/2,
+         read_cert/3,
          write_cert/3,
          device_info/0,
          setup_device/0,
@@ -22,7 +23,7 @@
          verify/4,
          public_key/2,
          refresh_key/2,
-         read_cert/3,
+         read_cert/4,
          write_cert/4,
          device_info/1,
          setup_device/1,
@@ -153,18 +154,24 @@ device_info() ->
 device_info(Context) ->
     io:format("~s", [generate_device_info(Context)]).
 
-
+%% This API will be removed on the long run
 read_cert(Type, DerOrPlain) ->
     ?CALL_API_SERVER([Type, DerOrPlain]).
 
-read_cert(Context, primary, DerOrPlain) ->
-    read_cert(Context, ?PRIMARY_CERT, DerOrPlain);
-read_cert(Context, secondary, DerOrPlain) ->
-    read_cert(Context, ?SECONDARY_CERT, DerOrPlain);
-read_cert(Context, Slot, DerOrPlain) when is_integer(Slot) ->
+%% This API will be removed on the long run
+read_cert(Context, Type, DerOrPlain) when is_atom(Type) ->
+    Templates = application:get_env(grisp_cryptoauth, templates, ?DEFAULT_TEMPLATES),
+    read_cert(Context, Type, Templates, DerOrPlain);
+read_cert(Type, Templates, DerOrPlain) ->
+    ?CALL_API_SERVER([Type, Templates, DerOrPlain]).
+
+read_cert(Context, primary, Templates, DerOrPlain) ->
+    read_cert(Context, ?PRIMARY_CERT, Templates, DerOrPlain);
+read_cert(Context, secondary, Templates, DerOrPlain) ->
+    read_cert(Context, ?SECONDARY_CERT, Templates, DerOrPlain);
+read_cert(Context, Slot, Templates, DerOrPlain) when is_integer(Slot) ->
     {ok, CompCert} = grisp_cryptoauth_drv:read_comp_cert(Context, Slot),
     <<TemplateId:4, ChainId:4>> = <<(binary:at(CompCert, 69))>>,
-    Templates = application:get_env(grisp_cryptoauth, templates, ?DEFAULT_TEMPLATES),
     case lists:keyfind({TemplateId, ChainId}, 1, Templates) of
         false ->
             {error, {undefined, {TemplateId, ChainId}}};
