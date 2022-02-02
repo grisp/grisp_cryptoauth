@@ -1,6 +1,6 @@
 {application, grisp_cryptoauth,
  [{description, "Secure Element support for GRiSP2 based on cryptoauthlib"},
-  {vsn, "2.0.0-rc1"},
+  {vsn, "2.0.0"},
   {registered, []},
   {applications,
    [kernel,
@@ -13,7 +13,7 @@
   {env,[]},
   {modules, []},
   {mod, {grisp_cryptoauth_app, []}},
-  {licenses, ["Apache License 2.0"]},
+  {licenses, ["Apache-2.0"]},
   {links,
    [{"Homepage", "https://www.grisp.org"},
     {"GitHub", "https://github.com/grisp/grisp_cryptoauth"}]}
