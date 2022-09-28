@@ -9,7 +9,8 @@
          handle_cast/2]).
 
 
--define(SLEEP_TIME_SEC, 5).
+-define(RETRY_N, 10).
+-define(RETRY_SLEEP, 1000).
 
 
 start_link() ->
@@ -18,17 +19,28 @@ start_link() ->
 
 init(_Args) ->
     {ok, Context} = grisp_cryptoauth:init(),
-    State = {Context, undefined},
-    {ok, State}.
+    case retry(grisp_cryptoauth_drv, serial_number, [], Context) of
+        {ok, _} -> {ok, Context};
+        Error   -> Error
+    end.
 
-
-handle_call({Fun, Args}, _From, {Context, OldTRef}) ->
-    %% on every API call reset a timer to put the device
-    %% to sleep after SLEEP_TIME_SEC seconds to save energy
-    timer:cancel(OldTRef), %% this doesn't throw on bad args
-    {ok, NewTRef} = timer:apply_after(?SLEEP_TIME_SEC * 1000, grisp_cryptoauth, sleep, Context),
-    {reply, apply(grisp_cryptoauth, Fun, [Context | Args]), {Context, NewTRef}}.
+handle_call({Fun, Args}, _From, Context) ->
+    {reply, retry(grisp_cryptoauth, Fun, Args, Context), Context}.
 
 
 handle_cast(_, State) ->
     {noreply, State}.
+
+
+retry(Mod, Fun, Args, Context) ->
+   retry(Mod, Fun, Args, Context, undefined, ?RETRY_N).
+
+retry(_Mod, _Fun, _Args, _Context, Res, 0) ->
+    Res;
+retry(Mod, Fun, Args, Context, Res, N) ->
+    timer:sleep(?RETRY_SLEEP),
+    case apply(Mod, Fun, [Context | Args]) of
+        {error, _} = Res    -> retry(Mod, Fun, Args, Context, Res, N-1);
+        {error, _, _} = Res -> retry(Mod, Fun, Args, Context, Res, N-1);
+        Result              -> Result
+    end.
