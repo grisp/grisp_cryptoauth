@@ -162,26 +162,35 @@ read_cert(Context, primary, DerOrPlain) ->
 read_cert(Context, secondary, DerOrPlain) ->
     read_cert(Context, ?SECONDARY_CERT, DerOrPlain);
 read_cert(Context, Slot, DerOrPlain) when is_integer(Slot) ->
-    {ok, CompCert} = grisp_cryptoauth_drv:read_comp_cert(Context, Slot),
-    <<TemplateId:4, ChainId:4>> = <<(binary:at(CompCert, 69))>>,
-    Templates = application:get_env(grisp_cryptoauth, templates, ?DEFAULT_TEMPLATES),
-    case lists:keyfind({TemplateId, ChainId}, 1, Templates) of
-        false ->
-            {error, {undefined, {TemplateId, ChainId}}};
-        {_, TBSFunName} ->
-            TBS = case TBSFunName of
-                      {Mod, Fun} ->
-                          Mod:Fun(Context);
-                      _ ->
-                          grisp_cryptoauth_template:TBSFunName(Context)
-                  end,
-            Cert = grisp_cryptoauth_cert:decompress(TBS, CompCert),
-            case DerOrPlain of
-                plain ->
-                    Cert;
-                der ->
-                    public_key:pkix_encode('OTPCertificate', Cert, otp)
-            end
+    case grisp_cryptoauth_drv:read_comp_cert(Context, Slot) of
+        {ok, CompCert} ->
+            <<TemplateId:4, ChainId:4>> = <<(binary:at(CompCert, 69))>>,
+            Templates = application:get_env(grisp_cryptoauth, templates, ?DEFAULT_TEMPLATES),
+            case lists:keyfind({TemplateId, ChainId}, 1, Templates) of
+                false ->
+                    {error, {undefined, {TemplateId, ChainId}}};
+                {_, TBSFunName} ->
+                    TBS = case TBSFunName of
+                              {Mod, Fun} ->
+                                  Mod:Fun(Context);
+                              _ ->
+                                  grisp_cryptoauth_template:TBSFunName(Context)
+                          end,
+                    case TBS of
+                        #'OTPTBSCertificate'{} ->
+                            Cert = grisp_cryptoauth_cert:decompress(TBS, CompCert),
+                            case DerOrPlain of
+                                plain ->
+                                    Cert;
+                                der ->
+                                    public_key:pkix_encode('OTPCertificate', Cert, otp)
+                            end;
+                        Error ->
+                            Error
+                    end
+            end;
+        Error ->
+            Error
     end.
 
 
