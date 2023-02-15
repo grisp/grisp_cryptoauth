@@ -14,6 +14,8 @@
   {modules, []},
   {mod, {grisp_cryptoauth_app, []}},
   {licenses, ["Apache-2.0"]},
+  {files, ["src", "priv", "CHANGELOG.md", "README.md",
+           "rebar.config", "rebar.lock", "config", "grisp"]},
   {links,
    [{"Homepage", "https://www.grisp.org"},
     {"GitHub", "https://github.com/grisp/grisp_cryptoauth"}]}
