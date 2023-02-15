@@ -39,7 +39,11 @@
 -define(SECONDARY_PRIVATE_KEY_3, 4).
 -define(PRIMARY_CERT, 10).
 -define(SECONDARY_CERT, 12).
--define(DEFAULT_TEMPLATES, [{{0, 0}, test}]).
+-define(DEFAULT_TEMPLATES, [
+                            {{0, 0}, stritzinger_root},
+                            {{1, 0}, grisp2_intermediate},
+                            {{2, 0}, grisp2_device}
+                           ]).
 
 -define(APP, grisp_cryptoauth).
 -define(DEFAULT_DEVICE, 'ATECC608').
