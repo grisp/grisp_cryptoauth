@@ -1,0 +1,33 @@
+Support in Erlang's SSL library for GRiSP's Secure Element without using OpenSSL crypto engines.
+
+Usage:
+
+    Key = #{algorithm => ecdsa, sign_fun => {my_module, my_sign_fun}}.
+
+Then add {key, Key} to the SSL options (server and/or client possible). The sign_fun has arity one
+and will get the to be signed Message (TLS 1.3) or {digest, Digest} (TLS 1.2), analogous to ssl:sign/3.
+The intended use here is providing a callback for grisp_cryptoauth:sign/2. While this patch makes
+heavy use of the existing infrastructure for crypto engines it is completely backwards compatible, e.g.
+crypto engines still work.
+
+NOTES:
+
+This patch is increment changes that are already made to ssl
+from the grisp runtime patch: 00100-rtmes.patch for OTP-25
+
+diff --git a/lib/ssl/src/ssl_config.erl b/lib/ssl/src/ssl_config.erl
+index 46578c05a5..c4e11622a6 100644
+--- a/lib/ssl/src/ssl_config.erl
++++ b/lib/ssl/src/ssl_config.erl
+@@ -104,6 +104,9 @@ group_pairs([#{private_key := #'DSAPrivateKey'{}} = Pair | Rest], #{dsa := DSA}
+ group_pairs([#{private_key := #{algorithm := dss, engine := _}} = Pair | Rest], Group) ->
+     Pairs = maps:get(dsa, Group),
+     group_pairs(Rest, Group#{dsa => [Pair | Pairs]});
++group_pairs([#{private_key := #{algorithm := Alg, sign_fun := _}} = Pair | Rest], Group) ->
++    Pairs = maps:get(Alg, Group),
++    group_pairs(Rest, Group#{Alg => [Pair | Pairs]});
+ group_pairs([#{private_key := #{algorithm := Alg, engine := _}} = Pair | Rest], Group) ->
+     Pairs = maps:get(Alg, Group),
+     group_pairs(Rest, Group#{Alg => [Pair | Pairs]}).
+
+ 
