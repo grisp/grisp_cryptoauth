@@ -1,7 +1,5 @@
 Support in Erlang's SSL library for GRiSP's Secure Element without using OpenSSL crypto engines.
 
-NOT TESTED YET!
-
 Usage:
 
     Key = #{algorithm => ecdsa, sign_fun => {my_module, my_sign_fun}}.
