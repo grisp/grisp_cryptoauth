@@ -11,14 +11,23 @@ heavy use of the existing infrastructure for crypto engines it is completely bac
 crypto engines still work.
 
 diff --git a/lib/ssl/src/ssl_config.erl b/lib/ssl/src/ssl_config.erl
-index 91bd03decf..e0debffdb5 100644
+index 46578c05a5..c4e11622a6 100644
 --- a/lib/ssl/src/ssl_config.erl
 +++ b/lib/ssl/src/ssl_config.erl
-@@ -163,6 +163,10 @@ init_certificates(undefined, #{pem_cache := PemCache} = Config, CertFile, server
-     end;
- init_certificates(OwnCerts, Config, _, _) ->
-     {ok, Config, OwnCerts}.
-+
+@@ -104,6 +104,9 @@ group_pairs([#{private_key := #'DSAPrivateKey'{}} = Pair | Rest], #{dsa := DSA}
+ group_pairs([#{private_key := #{algorithm := dss, engine := _}} = Pair | Rest], Group) ->
+     Pairs = maps:get(dsa, Group),
+     group_pairs(Rest, Group#{dsa => [Pair | Pairs]});
++group_pairs([#{private_key := #{algorithm := Alg, sign_fun := _}} = Pair | Rest], Group) ->
++    Pairs = maps:get(Alg, Group),
++    group_pairs(Rest, Group#{Alg => [Pair | Pairs]});
+ group_pairs([#{private_key := #{algorithm := Alg, engine := _}} = Pair | Rest], Group) ->
+     Pairs = maps:get(Alg, Group),
+     group_pairs(Rest, Group#{Alg => [Pair | Pairs]}).
+@@ -308,6 +311,9 @@ init_certificates(OwnCerts, _, _, _) when is_binary(OwnCerts)->
+ init_certificates(OwnCerts, _, _, _) ->
+     {ok, OwnCerts}.
+ 
 +%% HACK: allow callbacks for signing using the GRiSP Secure Element
 +init_private_key(_, #{algorithm := ecdsa, sign_fun := _SignFun} = Key, _, _, _) ->
 +    Key;
@@ -26,10 +35,10 @@ index 91bd03decf..e0debffdb5 100644
                                                                             Alg == rsa;
                                                                             Alg == dss ->
 diff --git a/lib/ssl/src/ssl_handshake.erl b/lib/ssl/src/ssl_handshake.erl
-index 9462607193..d80703a7fe 100644
+index 56a1ca81b9..8163c7640b 100644
 --- a/lib/ssl/src/ssl_handshake.erl
 +++ b/lib/ssl/src/ssl_handshake.erl
-@@ -2093,6 +2093,12 @@ digitally_signed(Version, Msg, HashAlgo, PrivateKey, SignAlgo) ->
+@@ -2121,6 +2121,12 @@ digitally_signed(Version, Msg, HashAlgo, PrivateKey, SignAlgo) ->
  	    throw(?ALERT_REC(?FATAL, ?HANDSHAKE_FAILURE, bad_key(PrivateKey)))
      end.
  
