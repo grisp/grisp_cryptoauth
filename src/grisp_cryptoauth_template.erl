@@ -3,6 +3,7 @@
 -export([grisp2_device/1,
          grisp2_intermediate/1,
          stritzinger_root/1,
+         grisp2_device_csr/1,
          test/1]).
 
 
@@ -63,6 +64,20 @@ stritzinger_root(Context) ->
         emailAddress => "info@stritzinger.com"
     },
     grisp_cryptoauth_profile:root_ca(Serial, Validity, Subject, DERPubKey).
+
+
+%% GRiSP2 device certificate CSR.
+grisp2_device_csr(Context) ->
+    {ok, DERPubKey} = grisp_cryptoauth:public_key(Context, primary),
+    {ok, GrispMeta} = grisp_hw:eeprom_read(),
+    Serial = maps:get(grisp_serial, GrispMeta),
+    Subject = #{
+        'CN' => "GRiSP2 device " ++ integer_to_list(Serial),
+        'O'  => "Dipl.Phys. Peer Stritzinger GmbH",
+        'OU' => "www.grisp.org",
+        emailAddress => "grisp@stritzinger.com"
+    },
+    grisp_cryptoauth_cert:generate_csr(Subject, DERPubKey).
 
 
 %% Just used for testing, no access to issuer certificate, Secure Element

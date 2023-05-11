@@ -6,6 +6,9 @@
 -export([decode_pem_file/2,
          decode_pem/2,
          encode_pem/1,
+         generate_csr/2,
+         compress_sig/1,
+         decompress_sig/1,
          sign/2,
          compress/3,
          decompress/2,
@@ -19,9 +22,7 @@
          build_grisp_ext/1]).
 
 %% Testing
--export([compress_sig/1,
-         decompress_sig/1,
-         compress_date/1,
+-export([compress_date/1,
          decompress_date/1,
          ext_authKeyId/1,
          ext_subKeyId/1,
@@ -58,6 +59,31 @@ encode_pem(#'OTPCertificate'{} = Cert) ->
         [{'Certificate',
           public_key:pkix_encode('OTPCertificate', Cert, otp),
           not_encrypted}]).
+
+
+generate_csr(Subject, DERPubKey) ->
+    RequestInfo =
+        #'CertificationRequestInfo'{
+            version = v1,
+            subject = pubkey_cert_records:transform(
+                        distinguished_name(Subject), encode),
+            subjectPKInfo = #'CertificationRequestInfo_subjectPKInfo'{
+                algorithm = #'CertificationRequestInfo_subjectPKInfo_algorithm'{
+                    algorithm = ?'id-ecPublicKey',
+                    parameters = {asn1_OPENTYPE,
+                                  public_key:der_encode('EcpkParameters',
+                                                        {namedCurve, ?'secp256r1'})}
+                },
+                subjectPublicKey = DERPubKey
+            },
+            attributes = []
+        },
+    #'CertificationRequest'{
+        certificationRequestInfo = RequestInfo,
+        signatureAlgorithm = #'CertificationRequest_signatureAlgorithm'{
+            algorithm = ?'ecdsa-with-SHA256'
+        }
+    }.
 
 
 sign(#'OTPTBSCertificate'{} = TBS, SignFun) when is_function(SignFun) ->

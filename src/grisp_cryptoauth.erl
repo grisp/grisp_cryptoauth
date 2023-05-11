@@ -9,6 +9,7 @@
          read_cert/2,
          write_cert/3,
          device_info/0,
+         generate_csr/2,
          setup_device/0,
          random_bytes/1]).
 
@@ -25,6 +26,7 @@
          read_cert/3,
          write_cert/4,
          device_info/1,
+         generate_csr/3,
          setup_device/1,
          random_bytes/2]).
 
@@ -152,6 +154,26 @@ device_info() ->
 
 device_info(Context) ->
     io:format("~s", [generate_device_info(Context)]).
+
+
+generate_csr(CSRFun, PEMorPlain) ->
+    ?CALL_API_SERVER([CSRFun, PEMorPlain]).
+
+generate_csr(Context, {CSRFunMod, CSRFunName}, PEMorPlain)
+  when PEMorPlain =:= pem; PEMorPlain =:= plain ->
+    TBSCSR = CSRFunMod:CSRFunName(Context),
+    RequestInfo = TBSCSR#'CertificationRequest'.certificationRequestInfo,
+    Message = public_key:der_encode('CertificationRequestInfo', RequestInfo),
+    {ok, Signature} = grisp_cryptoauth:sign(Context, primary, Message),
+    CSR = TBSCSR#'CertificationRequest'{
+                   signature = grisp_cryptoauth_cert:decompress_sig(Signature)},
+    case PEMorPlain of
+        plain ->
+            CSR;
+        pem ->
+            PEMEntry = public_key:pem_entry_encode('CertificationRequest', CSR),
+            public_key:pem_encode([PEMEntry])
+    end.
 
 
 read_cert(Type, DerOrPlain) ->
