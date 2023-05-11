@@ -6,7 +6,7 @@
 -export([decode_pem_file/2,
          decode_pem/2,
          encode_pem/1,
-         generate_csr/2,
+         generate_csr/3,
          compress_sig/1,
          decompress_sig/1,
          sign/2,
@@ -61,7 +61,9 @@ encode_pem(#'OTPCertificate'{} = Cert) ->
           not_encrypted}]).
 
 
-generate_csr(Subject, DERPubKey) ->
+generate_csr(Subject, DERPubKey, Extensions) ->
+    EncExtensions = [der_encode_ext(E) || E <- build_standard_ext(Extensions)],
+    DERExtensions = {asn1_OPENTYPE, public_key:der_encode('OTPExtensions', EncExtensions)},
     RequestInfo =
         #'CertificationRequestInfo'{
             version = v1,
@@ -76,7 +78,8 @@ generate_csr(Subject, DERPubKey) ->
                 },
                 subjectPublicKey = DERPubKey
             },
-            attributes = []
+            attributes = [#'AttributePKCS-10' {type = ?'pkcs-9-at-extensionRequest',
+                                               values = [DERExtensions]}]
         },
     #'CertificationRequest'{
         certificationRequestInfo = RequestInfo,
@@ -530,3 +533,21 @@ attribute_type(Type) when Type =:= 'id-emailAddress';
                           Type =:= "emailAddress" ->
     ?'id-emailAddress';
 attribute_type(Type) -> Type.
+
+
+der_encode_ext(#'Extension'{extnID = ?'id-ce-basicConstraints', extnValue = Value} = Ext) ->
+    Ext#'Extension'{extnValue = public_key:der_encode('BasicConstraints', Value)};
+der_encode_ext(#'Extension'{extnID = ?'id-ce-keyUsage', extnValue = Value} = Ext) ->
+    Ext#'Extension'{extnValue = public_key:der_encode('KeyUsage', Value)};
+der_encode_ext(#'Extension'{extnID = ?'id-ce-extKeyUsage', extnValue = Value} = Ext) ->
+    Ext#'Extension'{extnValue = public_key:der_encode('ExtKeyUsageSyntax', Value)};
+der_encode_ext(#'Extension'{extnID = ?'id-ce-subjectKeyIdentifier', extnValue = Value} = Ext) ->
+    Ext#'Extension'{extnValue = public_key:der_encode('SubjectKeyIdentifier', Value)};
+der_encode_ext(#'Extension'{extnID = ?'id-ce-authorityKeyIdentifier', extnValue = Value} = Ext) ->
+    Ext#'Extension'{extnValue = public_key:der_encode('AuthorityKeyIdentifier', Value)};
+der_encode_ext(#'Extension'{extnID = ?'id-ce-subjectAltName', extnValue = Value} = Ext) ->
+    Ext#'Extension'{extnValue = public_key:der_encode('SubjectAltName', Value)};
+der_encode_ext(#'Extension'{extnID = ?'id-ce-cRLDistributionPoints', extnValue = Value} = Ext) ->
+    Ext#'Extension'{extnValue = public_key:der_encode('CRLDistributionPoints', Value)};
+der_encode_ext(#'Extension'{extnID = ?'id-pe-authorityInfoAccess', extnValue = Value} = Ext) ->
+    Ext#'Extension'{extnValue = public_key:der_encode('AuthorityInfoAccessSyntax', Value)}.
