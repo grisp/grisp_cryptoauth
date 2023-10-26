@@ -31,7 +31,8 @@
          ext_isCa/1,
          calc_expire_years/1,
          encode_grisp_meta/1,
-         decode_grisp_meta/1]).
+         decode_grisp_meta/1,
+         build_cert_from_tbs/2]).
 
 -define(MAX_NOT_AFTER, {generalTime, "99991231235959Z"}).
 -define('id-stritzinger-grispMeta',         {1,3,6,1,4,1,4849,0}).
