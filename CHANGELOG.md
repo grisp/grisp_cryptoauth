@@ -8,6 +8,8 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [2.2.0] - 2024-06-25
+
 - Bump grisp to 2.5.0
 - Add ssl patch file for 26 and 26.2
 
@@ -26,7 +28,8 @@ and this project adheres to
 
 - Initial release
 
-[Unreleased]: https://github.com/grisp/grisp_cryptoauth/compare/2.1.0...HEAD
+[Unreleased]: https://github.com/grisp/grisp_cryptoauth/compare/2.2.0...HEAD
+[2.2.0]: https://github.com/grisp/grisp_cryptoauth/compare/2.1.0...2.2.0
 [2.1.0]: https://github.com/grisp/grisp_cryptoauth/compare/2.0.1...2.1.0
 [2.0.1]: https://github.com/grisp/grisp_cryptoauth/compare/2.0.0...2.0.1
 [2.0.0]: https://github.com/grisp/grisp_cryptoauth/compare/35942fd38f38c6c118930cbc0bc77e95a11710cb...2.0.0
