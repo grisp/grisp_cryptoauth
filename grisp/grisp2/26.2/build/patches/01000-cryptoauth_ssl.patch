@@ -1,0 +1,66 @@
+diff --git a/lib/ssl/src/ssl.erl b/lib/ssl/src/ssl.erl
+index 4cca50bfd6..21a1f81f34 100644
+--- a/lib/ssl/src/ssl.erl
++++ b/lib/ssl/src/ssl.erl
+@@ -1960,6 +1960,8 @@ check_cert_key(UserOpts, CertKeys, LogLevel) ->
+                         CertKeys0#{key => Key};
+                     {_, #{engine := _, key_id := _, algorithm := _} = Key} ->
+                         CertKeys0#{key => Key};
++                    {_, #{sign_fun := _, algorithm := ecdsa} = Key} ->
++                        CertKeys0#{key => Key};
+                     {new, Err1} ->
+                         option_error(key, Err1)
+                 end,
+diff --git a/lib/ssl/src/ssl_config.erl b/lib/ssl/src/ssl_config.erl
+index 2d29d82c0b..3d0096e9ec 100644
+--- a/lib/ssl/src/ssl_config.erl
++++ b/lib/ssl/src/ssl_config.erl
+@@ -87,6 +87,9 @@ group_pairs([#{private_key := #'DSAPrivateKey'{}} = Pair | Rest], #{dsa := DSA}
+ group_pairs([#{private_key := #{algorithm := dss, engine := _}} = Pair | Rest], Group) ->
+     Pairs = maps:get(dsa, Group),
+     group_pairs(Rest, Group#{dsa => [Pair | Pairs]});
++group_pairs([#{private_key := #{algorithm := Alg, sign_fun := _}} = Pair | Rest], Group) ->
++    Pairs = maps:get(Alg, Group),
++    group_pairs(Rest, Group#{Alg => [Pair | Pairs]});
+ group_pairs([#{private_key := #{algorithm := Alg, engine := _}} = Pair | Rest], Group) ->
+     Pairs = maps:get(Alg, Group),
+     group_pairs(Rest, Group#{Alg => [Pair | Pairs]});
+@@ -111,7 +114,10 @@ prio_eddsa(EDDSA) ->
+     using_curve({namedCurve, ?'id-Ed25519'}, EDDSA, []) ++ using_curve({namedCurve, ?'id-Ed448'}, EDDSA, []).
+ 
+ prio_ecdsa(ECDSA, Curves) ->
+-    EnginePairs = [Pair || Pair = #{private_key := #{engine := _}} <- ECDSA],
++    EnginePairs = lists:filter(fun(#{private_key := #{engine := _}}) -> true;
++                                  (#{private_key := #{sign_fun := _}}) -> true;
++                                  (_) -> false
++                               end, ECDSA),
+     EnginePairs ++ lists:foldr(fun(Curve, AccIn) ->
+                                        CurveOid = pubkey_cert_records:namedCurves(Curve),
+                                        Pairs = using_curve({namedCurve, CurveOid}, ECDSA -- EnginePairs, []),
+@@ -265,6 +271,9 @@ init_certificate_file(CertFile, PemCache, Role) ->
+             file_error(CertFile, {certfile, Reason})
+     end.
+ 
++%% HACK: allow callbacks for signing using the GRiSP Secure Element
++init_private_key(#{algorithm := ecdsa, sign_fun := _SignFun} = Key, _, _) ->
++    Key;
+ init_private_key(#{algorithm := Alg} = Key, _, _PemCache)
+   when Alg =:= ecdsa; Alg =:= rsa; Alg =:= dss ->
+     case maps:is_key(engine, Key) andalso maps:is_key(key_id, Key) of
+diff --git a/lib/ssl/src/ssl_handshake.erl b/lib/ssl/src/ssl_handshake.erl
+index 7dd60829a1..798382e17d 100644
+--- a/lib/ssl/src/ssl_handshake.erl
++++ b/lib/ssl/src/ssl_handshake.erl
+@@ -2135,6 +2135,12 @@ digitally_signed(Version, Msg, HashAlgo, PrivateKey, SignAlgo) ->
+ 	    throw(?ALERT_REC(?FATAL, ?HANDSHAKE_FAILURE, bad_key(PrivateKey)))
+     end.
+ 
++%% HACK: allow callbacks for signing using the GRiSP Secure Element
++%% We only care here for sha256 + ecdsa for TLS 1.2 and 1.3 (SSL 3.3 and 3.4)
++do_digitally_signed(?TLS_1_3, Msg, sha256, #{algorithm := ecdsa, sign_fun := {Mod, Fun}}, ecdsa) ->
++    Mod:Fun(Msg);
++do_digitally_signed(?TLS_1_2, Hash, sha256, #{algorithm := ecdsa, sign_fun := {Mod, Fun}}, ecdsa) ->
++    Mod:Fun({digest, Hash});
+ do_digitally_signed(Version, Msg, HashAlgo, {#'RSAPrivateKey'{} = Key,
+                                              #'RSASSA-PSS-params'{}}, SignAlgo) when ?TLS_GTE(Version, ?TLS_1_2) ->
+     Options = signature_options(SignAlgo, HashAlgo),
