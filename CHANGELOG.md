@@ -8,6 +8,9 @@ and this project adheres to
 
 ## [Unreleased]
 
+- Bump grisp to 2.5.0
+- Add ssl patch file for 26 and 26.2
+
 ## [2.1.0] - 2024-01-19
 
 - Bump grisp to 2.4.0
