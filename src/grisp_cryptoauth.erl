@@ -95,6 +95,14 @@ sign(Context, secondary_3, Msg) ->
 sign_fun(Msg) ->
     sign_fun(Msg, sha256, []).
 
+%% Active from OTP 27 as key sign_fun
+%{certs_keys, [#{
+%   cert => ClientChain,
+%   key => #{
+%       algorithm => ecdsa,
+%       sign_fun => fun grisp_cryptoauth:sign_fun/3
+%   }
+% }]}
 sign_fun(Msg, sha256, _Opts)  ->
     {ok, Sig} = sign(primary, Msg),
     <<R:32/big-unsigned-integer-unit:8, S:32/big-unsigned-integer-unit:8>> = Sig,
