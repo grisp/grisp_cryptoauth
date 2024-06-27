@@ -8,6 +8,8 @@ and this project adheres to
 
 ## [Unreleased]
 
+- Add sign_fun/3 to support OTP 27 new key option for secure Elements
+
 ## [2.2.0] - 2024-06-25
 
 - Bump grisp to 2.5.0

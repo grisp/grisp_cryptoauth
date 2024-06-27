@@ -36,12 +36,21 @@ More to come :).
 
 Setting up TLS
 --------------
-
-There is a patch necessary to make use of `grisp_cryptoauth` for TLS. This
-patch is included in this repository and is tested for Erlang `23.3.4.10`.
-
 Erlang's `ssl` library is used for setting up TLS/mTLS. For the device
 you need to honor at least the following options:
+#### OTP >= 27
+```
+{certs_keys, [#{
+    cert => ClientChain,
+    key => #{
+        algorithm => ecdsa,
+        sign_fun => fun grisp_cryptoauth:sign_fun/3
+    }
+}]}
+```
+#### Legacy tls options: OTP =< 26
+There is a patch necessary to make use of `grisp_cryptoauth` for TLS. This
+patch is included in this repository and is tested for Erlang `23.3.4.10`, this patch has been adapted and maintained until OTP 26. We do not apply any SSL patch from OTP 27.
 
 ```
 %% device certificate
