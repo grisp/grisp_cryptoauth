@@ -8,6 +8,8 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [2.3.0] - 2024-06-27
+
 - Add sign_fun/3 to support OTP 27 new key option for secure Elements
 
 ## [2.2.0] - 2024-06-25
@@ -30,7 +32,8 @@ and this project adheres to
 
 - Initial release
 
-[Unreleased]: https://github.com/grisp/grisp_cryptoauth/compare/2.2.0...HEAD
+[Unreleased]: https://github.com/grisp/grisp_cryptoauth/compare/2.3.0...HEAD
+[2.3.0]: https://github.com/grisp/grisp_cryptoauth/compare/2.2.0...2.3.0
 [2.2.0]: https://github.com/grisp/grisp_cryptoauth/compare/2.1.0...2.2.0
 [2.1.0]: https://github.com/grisp/grisp_cryptoauth/compare/2.0.1...2.1.0
 [2.0.1]: https://github.com/grisp/grisp_cryptoauth/compare/2.0.0...2.0.1
