@@ -2,3 +2,4 @@ _build
 *.o
 _checkouts
 _grisp
+.tool-versions

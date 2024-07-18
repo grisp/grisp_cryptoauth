@@ -19,6 +19,23 @@ with cryptoauthlib installed, build within the `grisp_linux_builder`.
 Just add it as dependency in rebar3 in your main application.
 
 
+Development
+-----------
+
+When included as a dependency in an application, is is possible to define
+the macro ENUMATE_CRYPTOAUTH using overrides:
+
+        {overrides, [
+            {add, grisp_cryptoauth, [{erl_opts, [{d, 'EMULATE_CRYPTOAUTH'}]}]}
+        ]},
+
+With this defined, the extra configuration keys `client_cert`, `client_key` and
+`tls_verify` can be specified to be used instead of the secure element.
+
+This allow an application depending on grisp_cryptoauth to run tests and local
+shell.
+
+
 Device Support
 --------------
 
@@ -34,8 +51,158 @@ This library follows the ATECC608B-TFLXTLS configuration, that means in particul
 More to come :).
 
 
-Setting up TLS
---------------
+Configuring TLS Options
+-----------------------
+
+By configuring grisp_cryptoauth, multiple application can request the TLS
+options required to connect to a given server, assuming that all the servers
+have the same security requirments. The following options are used to build
+the TLS options:
+
+
+* `tls_use_client_certificate`
+
+Configures if TLS cponnections should use the client certificate. Default: true.
+
+
+* `tls_client_trusted_certs`
+
+Configures the client trusted certificates.
+
+Should provide all the additional certificates required to validate to the
+client root CA, alongside the `tls_client_trusted_certs_cb` option.
+
+Point to a directory from where all the `.pem` and `.crt` files will be loaded,
+or to a single PEM file that could contain multiple certificates.
+
+The configuration could either be an absolute path, a path relative to the
+`priv` directory of a given application, or a path relative to an application
+`test` directory.
+
+If not specified, it will use the default certificate chain matching the
+client certificate.
+
+e.g.
+
+```Erlang
+{tls_client_trusted_certs, "/absolute/path/to/directory"}
+{tls_client_trusted_certs, "/absolute/path/to/single.pem"}
+{tls_client_trusted_certs, {priv, my_app, "relative/path/to/directory"}}
+{tls_client_trusted_certs, {priv, my_app, "relative/path/to/single.pem"}}
+{tls_client_trusted_certs, {test, my_app, "relative/path/to/directory"}}
+{tls_client_trusted_certs, {test, my_app, "relative/path/to/single.pem"}}
+```
+
+* `tls_client_trusted_certs_cb`
+
+Configures the client trusted certificates.
+
+Should provide all the additional certificates required to validate to the
+client root CA, alongside the `tls_client_trusted_certs` option.
+
+Define a callback function the will return the client trusted certificates
+as a list of DER encoded certificates.
+
+e.g.
+
+```Erlang
+{tls_client_trusted_certs_cb, {my_mod, my_fun}}}
+{tls_client_trusted_certs_cb, {my_mod, my_fun, [some, arguments]}}}
+```
+
+* `tls_server_trusted_certs`
+
+Configures the server trusted certificates.
+
+Should provide the certification chain for veryfying the server certificates,
+alongside the `tls_server_trusted_certs_cb` option.
+
+Point to a directory that should contain a PEM file with extension `.pem`
+or `.crt` with the name of the domain the TLS connection is for. If multiple
+certificates are required, the file must contain the full chain.
+If the path is set to `/foo/bar`, and the server doain name is `grisp.org`,
+the TLS configuration will try the certificate `/foo/bar/grisp.org.pem` or
+`/foo/bar/grisp.org.crt` if any exists.
+
+The configuration could either be an absolute path, a path relative to the
+`priv` directory of a given application, or a path relative to an application
+`test` directory.
+
+e.g.
+
+```Erlang
+{tls_server_trusted_certs, "/absolute/path/to/directory"}
+{tls_server_trusted_certs, {priv, my_app, "relative/path/to/directory"}}
+{tls_server_trusted_certs, {test, my_app, "relative/path/to/directory"}}
+```
+
+* `tls_server_trusted_certs_cb`
+
+Configures the server trusted certificates.
+
+Should provide the certification chain for veryfying the server certificates,
+alongside the `tls_server_trusted_certs` option.
+
+Define a callback function the will return the client trusted certificates
+as a list of DER encoded certificates.
+
+e.g.
+
+```Erlang
+{tls_server_trusted_certs_cb, {certifi, cacerts}}}
+{tls_server_trusted_certs_cb, {my_mod, my_fun, [some, arguments]}}}
+```
+
+* `client_certs`
+
+When EMULATE_CRYPTOAUTH macro is defined, this configures the certificate to
+use instead of the secure element's one when generating TLS options.
+
+The configuration could either be an absolute path, a path relative to the
+`priv` directory of a given application, or a path relative to an application
+`test` directory.
+
+e.g.
+
+```Erlang
+{client_certs, "/absolute/path/to/some.pem"}
+{client_certs, {priv, my_app, "relative/path/to/some.crt"}}
+{client_certs, {test, my_app, "relative/cert.pem"}}
+```
+
+* `client_key`
+
+When EMULATE_CRYPTOAUTH macro is defined, this configures the private key to
+use instead of the secure element's one when generating TLS options.
+
+The configuration could either be an absolute path, a path relative to the
+`priv` directory of a given application, or a path relative to an application
+`test` directory.
+
+e.g.
+
+```Erlang
+{client_key, "/absolute/path/to/some.pem"}
+{client_key, {priv, my_app, "relative/path/to/some.key"}}
+{client_key, {test, my_app, "relative/key.pem"}}
+```
+
+* `tls_verify`
+
+When EMULATE_CRYPTOAUTH macro is defined, this allow overriding server
+certificate verification for development or testing. By default it is
+`verify_peer` but can be set to `verify_none`.
+
+e.g.
+
+```Erlang
+{tls_verify, verify_none}
+```
+
+
+Setting Up TLS Manually
+-----------------------
+
 Erlang's `ssl` library is used for setting up TLS/mTLS. For the device
 you need to honor at least the following options:
 #### OTP >= 27

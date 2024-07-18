@@ -23,9 +23,41 @@
 
 -on_load(init/0).
 
--define(nif_stub, nif_stub_error(?LINE)).
+-ifdef(EMULATE_CRYPTOAUTH).
+
+init() -> ok.
+
+-define(nif_stub,
+    erlang:nif_error({nif_not_emulated,
+                      module, ?MODULE,
+                      function, {?FUNCTION_NAME, ?FUNCTION_ARITY},
+                      line, ?LINE})).
+
+init_device(_Config) -> {ok, emulated}.
+
+-else. % EMULATE_CRYPTOAUTH not defined
+
+init() ->
+    SoName = case code:priv_dir(grisp_cryptoauth) of
+        {error, bad_name} ->
+            case filelib:is_dir(filename:join(["..", priv])) of
+                true ->
+                    filename:join(["..", priv, grisp_cryptoauth_drv]);
+                _ ->
+                    filename:join([priv, grisp_cryptoauth_drv])
+            end;
+        Dir ->
+            filename:join(Dir, grisp_cryptoauth_drv)
+    end,
+    erlang:load_nif(SoName, 0).
+
+-define(nif_stub,
+    erlang:nif_error({nif_not_loaded, module, ?MODULE, line, ?LINE})).
 
 init_device(_)  ->          ?nif_stub.
+
+-endif.
+
 sleep_device(_)  ->         ?nif_stub.
 device_info(_) ->           ?nif_stub.
 config_locked(_) ->         ?nif_stub.
@@ -45,20 +77,3 @@ verify_stored(_,_,_,_) ->   ?nif_stub.
 write_comp_cert(_,_,_) ->   ?nif_stub.
 read_comp_cert(_,_) ->      ?nif_stub.
 gen_random_bytes(_) ->      ?nif_stub.
-
-init() ->
-    SoName = case code:priv_dir(grisp_cryptoauth) of
-        {error, bad_name} ->
-            case filelib:is_dir(filename:join(["..", priv])) of
-                true ->
-                    filename:join(["..", priv, grisp_cryptoauth_drv]);
-                _ ->
-                    filename:join([priv, grisp_cryptoauth_drv])
-            end;
-        Dir ->
-            filename:join(Dir, grisp_cryptoauth_drv)
-    end,
-    erlang:load_nif(SoName, 0).
-
-nif_stub_error(Line) ->
-    erlang:nif_error({nif_not_loaded, module, ?MODULE, line, Line}).

@@ -56,7 +56,12 @@
           i2c_address => 16#6C}).
 
 -define(API_SERVER, grisp_cryptoauth_api_server).
--define(CALL_API_SERVER(Args), gen_server:call(?API_SERVER, {?FUNCTION_NAME, Args})).
+-define(CALL_API_SERVER(Args),
+    case gen_server:call(?API_SERVER, {?FUNCTION_NAME, Args}) of
+        {ok, Result} -> Result;
+        {error, Class, Reason, Stacktrace} ->
+            erlang:raise(Class, Reason, Stacktrace)
+    end).
 
 %% ---------------
 %% Main API
