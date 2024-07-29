@@ -27,8 +27,11 @@ handle_call({Fun, Args}, _From, {Context, OldTRef}) ->
     %% to sleep after SLEEP_TIME_SEC seconds to save energy
     timer:cancel(OldTRef), %% this doesn't throw on bad args
     {ok, NewTRef} = timer:apply_after(?SLEEP_TIME_SEC * 1000, grisp_cryptoauth, sleep, [Context]),
-    {reply, apply(grisp_cryptoauth, Fun, [Context | Args]), {Context, NewTRef}}.
-
+    try apply(grisp_cryptoauth, Fun, [Context | Args]) of
+        Result -> {reply, {ok, Result}, {Context, NewTRef}}
+    catch
+        C:R:S -> {reply, {error, C, R, S}, {Context, NewTRef}}
+    end.
 
 handle_cast(_, State) ->
     {noreply, State}.

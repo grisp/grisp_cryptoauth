@@ -8,6 +8,13 @@ and this project adheres to
 
 ## [Unreleased]
 
+- Add grisp_cryptoauth_tls, an helper to generate TLS options for connecting
+to servers with client certificate authentication driven by grisp_cryptoauth
+configuration
+
+- Add EMULATE_CRYPTOAUTH macro that could be defined for grisp_cryptoauth to
+be used in tests and in local shell.
+
 ## [2.3.0] - 2024-06-27
 
 - Add sign_fun/3 to support OTP 27 new key option for secure Elements
