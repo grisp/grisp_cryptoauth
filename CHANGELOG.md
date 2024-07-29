@@ -8,6 +8,8 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [2.4.0] - 2024-07-29
+
 - Add grisp_cryptoauth_tls, an helper to generate TLS options for connecting
 to servers with client certificate authentication driven by grisp_cryptoauth
 configuration
@@ -39,7 +41,8 @@ be used in tests and in local shell.
 
 - Initial release
 
-[Unreleased]: https://github.com/grisp/grisp_cryptoauth/compare/2.3.0...HEAD
+[Unreleased]: https://github.com/grisp/grisp_cryptoauth/compare/2.4.0...HEAD
+[2.4.0]: https://github.com/grisp/grisp_cryptoauth/compare/2.3.0...2.4.0
 [2.3.0]: https://github.com/grisp/grisp_cryptoauth/compare/2.2.0...2.3.0
 [2.2.0]: https://github.com/grisp/grisp_cryptoauth/compare/2.1.0...2.2.0
 [2.1.0]: https://github.com/grisp/grisp_cryptoauth/compare/2.0.1...2.1.0
