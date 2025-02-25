@@ -8,6 +8,10 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Changed
+
+- Upgrade to grisp "2.8.0"
+
 ## [2.4.0] - 2024-07-29
 
 - Add grisp_cryptoauth_tls, an helper to generate TLS options for connecting
