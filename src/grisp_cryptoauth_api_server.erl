@@ -2,6 +2,8 @@
 
 -behaviour(gen_server).
 
+-include_lib("kernel/include/logger.hrl").
+
 -export([start_link/0]).
 
 -export([init/1,
@@ -36,7 +38,9 @@ retry(RetryCount, SleepTime, Fun, Args) ->
     try apply(grisp_cryptoauth, Fun, Args) of
         {error, _} = Error when RetryCount =< 1 ->
             Error;
-        {error, _} ->
+        {error, _} = Error ->
+            ?LOG_WARNING("Error while calling function ~w [~w] ~p",
+                         [Fun, RetryCount - 1, Error]),
             timer:sleep(SleepTime),
             retry(RetryCount - 1, SleepTime, Fun, Args);
         Result ->
@@ -44,7 +48,9 @@ retry(RetryCount, SleepTime, Fun, Args) ->
     catch
         C:R:S when RetryCount =< 1 ->
             {error, C, R, S};
-        _:_ ->
+        Class:Reason ->
+            ?LOG_WARNING("Exception while calling function ~w [~w]: ~w:~p",
+                         [Fun, RetryCount - 1, Class, Reason]),
             timer:sleep(SleepTime),
             retry(RetryCount - 1, SleepTime, Fun, Args)
     end.
