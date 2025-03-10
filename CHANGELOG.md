@@ -8,6 +8,10 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Changed
+
+- Add retry mechanism for some rare issues.
+
 ## [2.4.1] - 2025-02-25
 
 ### Changed
