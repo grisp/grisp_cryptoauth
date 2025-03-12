@@ -8,6 +8,8 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [2.4.2] - 2025-03-12
+
 ### Changed
 
 - Add retry mechanism for some rare issues.
@@ -51,7 +53,8 @@ be used in tests and in local shell.
 
 - Initial release
 
-[Unreleased]: https://github.com/grisp/grisp_cryptoauth/compare/2.4.1...HEAD
+[Unreleased]: https://github.com/grisp/grisp_cryptoauth/compare/2.4.2...HEAD
+[2.4.2]: https://github.com/grisp/grisp_cryptoauth/compare/2.4.1...2.4.2
 [2.4.1]: https://github.com/grisp/grisp_cryptoauth/compare/2.4.0...2.4.1
 [2.4.0]: https://github.com/grisp/grisp_cryptoauth/compare/2.3.0...2.4.0
 [2.3.0]: https://github.com/grisp/grisp_cryptoauth/compare/2.2.0...2.3.0
