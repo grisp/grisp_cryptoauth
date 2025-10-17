@@ -12,7 +12,8 @@
          write_cert/3,
          device_info/0,
          setup_device/0,
-         random_bytes/1]).
+         random_bytes/1,
+         tls_options/1]).
 
 %% Use for testing
 %% without API server
@@ -245,6 +246,9 @@ random_bytes(Context, ChunksN, Acc) ->
     {ok, RandBytes} = grisp_cryptoauth_drv:gen_random_bytes(Context),
     random_bytes(Context, ChunksN-1, [RandBytes | Acc]).
 
+
+tls_options(Domain) ->
+    grisp_cryptoauth_tls:options(Domain).
 
 %% ---------------
 %% Config handling
