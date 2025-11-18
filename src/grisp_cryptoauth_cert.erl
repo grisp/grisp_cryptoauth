@@ -239,19 +239,18 @@ distinguished_name(Map) when is_map(Map) ->
 %%%%%%%%%%%%%%
 
 
-%% There's no way to DER encode standard types using
-%% standard modules, hence use undocumented 'OTP-PUB-KEY'
-%% and some hackery
+%% Manual DER encoding/decoding for ASN.1 types
+%% Functions extracted from OTP-PUB-KEY module to avoid dependency
 
 %% CertificateSerialNumber is derived from Integer
 der_encode_Integer(Int) ->
-    <<T:8, _L:8, V/binary>> =
-        element(2, 'OTP-PUB-KEY':encode('CertificateSerialNumber', Int)),
+    Bytes = iolist_to_binary(enc_CertificateSerialNumber(Int)),
+    <<T:8, _L:8, V/binary>> = Bytes,
     {T, V}.
 
 der_decode_Integer(DER) ->
-    element(2, 'OTP-PUB-KEY':decode('CertificateSerialNumber',
-                                    <<2, (byte_size(DER)):8, DER/binary>>)).
+    {Tlv, _} = asn1rt_nif:decode_ber_tlv(<<2, (byte_size(DER)):8, DER/binary>>),
+    dec_CertificateSerialNumber(Tlv).
 
 
 %% InvalidityDate is derived from GeneralizedTime
@@ -259,14 +258,13 @@ der_encode_GeneralizedTime({{Year, Month, Day}, _}) ->
     TimeString = lists:flatten([string:right(integer_to_list(Int), Pad, $0) ||
                                 {Int, Pad} <- [{Year, 4}, {Month, 2}, {Day, 2}]])
                                ++ [48,48,48,48,48,48,90],
-    <<T:8, _L:8, V/binary>> =
-        element(2, 'OTP-PUB-KEY':encode('InvalidityDate', TimeString)),
+    Bytes = iolist_to_binary(enc_InvalidityDate(TimeString)),
+    <<T:8, _L:8, V/binary>> = Bytes,
     {T, V}.
 
 der_decode_GeneralizedTime(DER) ->
-    [Y1,Y2,Y3,Y4,M1,M2,D1,D2,H1,H2,48,48,48,48,90] =
-        element(2, 'OTP-PUB-KEY':decode('InvalidityDate',
-                                        <<24, (byte_size(DER)):8, DER/binary>>)),
+    {Tlv, _} = asn1rt_nif:decode_ber_tlv(<<24, (byte_size(DER)):8, DER/binary>>),
+    [Y1,Y2,Y3,Y4,M1,M2,D1,D2,H1,H2,48,48,48,48,90] = dec_InvalidityDate(Tlv),
     {{list_to_integer([Y1,Y2,Y3,Y4]),
       list_to_integer([M1,M2]),
       list_to_integer([D1,D2])},
@@ -275,24 +273,24 @@ der_decode_GeneralizedTime(DER) ->
 
 %% EmailAddress is derived from IA5String
 der_encode_IA5String(String) ->
-    <<T:8, _L:8, V/binary>> =
-        element(2, 'OTP-PUB-KEY':encode('EmailAddress', String)),
+    Bytes = iolist_to_binary(enc_EmailAddress(String)),
+    <<T:8, _L:8, V/binary>> = Bytes,
     {T, V}.
 
 der_decode_IA5String(DER) ->
-    element(2, 'OTP-PUB-KEY':decode('EmailAddress',
-                                    <<22, (byte_size(DER)):8, DER/binary>>)).
+    {Tlv, _} = asn1rt_nif:decode_ber_tlv(<<22, (byte_size(DER)):8, DER/binary>>),
+    dec_EmailAddress(Tlv).
 
 
 %% CertPolicyId is derived from ObjectIdentifier
 der_encode_ObjectIdentifier(Id) ->
-    <<T:8, _L:8, V/binary>> =
-        element(2, 'OTP-PUB-KEY':encode('CertPolicyId', Id)),
+    Bytes = iolist_to_binary(enc_CertPolicyId(Id)),
+    <<T:8, _L:8, V/binary>> = Bytes,
     {T, V}.
 
 der_decode_ObjectIdentifier(DER) ->
-    element(2, 'OTP-PUB-KEY':decode('CertPolicyId',
-                                    <<6, (byte_size(DER)):8, DER/binary>>)).
+    {Tlv, _} = asn1rt_nif:decode_ber_tlv(<<6, (byte_size(DER)):8, DER/binary>>),
+    dec_CertPolicyId(Tlv).
 
 
 ext_authKeyId(#'OTPCertificate'{tbsCertificate = TBS}) ->
@@ -354,7 +352,7 @@ calc_expire_years(#'Validity'{notBefore = NotBefore, notAfter = NotAfter}) ->
     {Days, Hours} = calendar:time_difference(TS1, TS2),
     ExpireYears = Days div 365,
     case {ExpireYears < 32, Days rem 365, Hours} of
-        {true, 0, {0, 0, 0}} -> 
+        {true, 0, {0, 0, 0}} ->
             ExpireYears;
         {C1, C2, C3} ->
             throw({error, {validity_broken, {C1, C2, C3}}})
@@ -504,3 +502,222 @@ attribute_type(Type) when Type =:= 'id-emailAddress';
                           Type =:= "emailAddress" ->
     ?'id-emailAddress';
 attribute_type(Type) -> Type.
+
+
+%%%%%%%%%%%%%%
+%% Functions extracted from OTP-PUB-KEY module
+%%%%%%%%%%%%%%
+
+%% CertificateSerialNumber encoding/decoding
+enc_CertificateSerialNumber(Val) ->
+    enc_CertificateSerialNumber(Val, [<<2>>]).
+
+enc_CertificateSerialNumber(Val, TagIn) ->
+    encode_integer(Val, TagIn).
+
+dec_CertificateSerialNumber(Tlv) ->
+    dec_CertificateSerialNumber(Tlv, [2]).
+
+dec_CertificateSerialNumber(Tlv, TagIn) ->
+    decode_integer(Tlv, TagIn).
+
+%% InvalidityDate encoding/decoding
+enc_InvalidityDate(Val) ->
+    enc_InvalidityDate(Val, [<<24>>]).
+
+enc_InvalidityDate(Val, TagIn) ->
+    encode_restricted_string(Val, TagIn).
+
+dec_InvalidityDate(Tlv) ->
+    dec_InvalidityDate(Tlv, [24]).
+
+dec_InvalidityDate(Tlv, TagIn) ->
+    binary_to_list(decode_restricted_string(Tlv, TagIn)).
+
+%% EmailAddress encoding/decoding
+enc_EmailAddress(Val) ->
+    enc_EmailAddress(Val, [<<22>>]).
+
+enc_EmailAddress(Val, TagIn) ->
+    encode_restricted_string(Val, TagIn).
+
+dec_EmailAddress(Tlv) ->
+    dec_EmailAddress(Tlv, [22]).
+
+dec_EmailAddress(Tlv, TagIn) ->
+    Val1 = decode_restricted_string(Tlv, TagIn),
+    C1 = byte_size(Val1),
+    if 1 =< C1, C1 =< 255 ->
+        binary_to_list(Val1);
+    true ->
+        exit({error,{asn1,bad_range}})
+    end.
+
+%% CertPolicyId encoding/decoding
+enc_CertPolicyId(Val) ->
+    enc_CertPolicyId(Val, [<<6>>]).
+
+enc_CertPolicyId(Val, TagIn) ->
+    encode_object_identifier(Val, TagIn).
+
+dec_CertPolicyId(Tlv) ->
+    dec_CertPolicyId(Tlv, [6]).
+
+dec_CertPolicyId(Tlv, TagIn) ->
+    decode_object_identifier(Tlv, TagIn).
+
+%% Helper functions for ASN.1 encoding/decoding
+
+encode_integer(Val, Tag) when is_integer(Val) ->
+    encode_tags(Tag, encode_integer(Val));
+encode_integer(Val, _Tag) ->
+    exit({error, {asn1, {encode_integer, Val}}}).
+
+encode_integer(Val) ->
+    Bytes =
+        if
+            Val >= 0 ->
+                encode_integer_pos(Val, []);
+            true ->
+                encode_integer_neg(Val, [])
+        end,
+    {Bytes, length(Bytes)}.
+
+encode_integer_neg(-1, [B1 | _T] = L) when B1 > 127 ->
+    L;
+encode_integer_neg(N, Acc) ->
+    encode_integer_neg(N bsr 8, [N band 255 | Acc]).
+
+encode_integer_pos(0, [B | _Acc] = L) when B < 128 ->
+    L;
+encode_integer_pos(N, Acc) ->
+    encode_integer_pos(N bsr 8, [N band 255 | Acc]).
+
+decode_integer(Tlv, TagIn) ->
+    Bin = match_tags(Tlv, TagIn),
+    Len = byte_size(Bin),
+    <<Int:Len/signed-unit:8>> = Bin,
+    Int.
+
+encode_restricted_string(OctetList, TagIn) when is_binary(OctetList) ->
+    encode_tags(TagIn, OctetList, byte_size(OctetList));
+encode_restricted_string(OctetList, TagIn) when is_list(OctetList) ->
+    encode_tags(TagIn, OctetList, length(OctetList)).
+
+decode_restricted_string(Tlv, TagsIn) ->
+    match_and_collect(Tlv, TagsIn).
+
+encode_object_identifier(Val, TagIn) ->
+    encode_tags(TagIn, e_object_identifier(Val)).
+
+e_object_identifier({'OBJECT IDENTIFIER', V}) ->
+    e_object_identifier(V);
+e_object_identifier(V) when is_tuple(V) ->
+    e_object_identifier(tuple_to_list(V));
+e_object_identifier([E1, E2 | Tail]) ->
+    Head = 40 * E1 + E2,
+    {H, Lh} = mk_object_val(Head),
+    {R, Lr} = lists:mapfoldl(fun enc_obj_id_tail/2, 0, Tail),
+    {[H | R], Lh + Lr}.
+
+enc_obj_id_tail(H, Len) ->
+    {B, L} = mk_object_val(H),
+    {B, Len + L}.
+
+mk_object_val(Val) when Val =< 127 ->
+    {[255 band Val], 1};
+mk_object_val(Val) ->
+    mk_object_val(Val bsr 7, [Val band 127], 1).
+
+mk_object_val(0, Ack, Len) ->
+    {Ack, Len};
+mk_object_val(Val, Ack, Len) ->
+    mk_object_val(Val bsr 7, [Val band 127 bor 128 | Ack], Len + 1).
+
+decode_object_identifier(Tlv, Tags) ->
+    Val = match_tags(Tlv, Tags),
+    [AddedObjVal | ObjVals] = dec_subidentifiers(Val, 0, []),
+    {Val1, Val2} =
+        if
+            AddedObjVal < 40 ->
+                {0, AddedObjVal};
+            AddedObjVal < 80 ->
+                {1, AddedObjVal - 40};
+            true ->
+                {2, AddedObjVal - 80}
+        end,
+    list_to_tuple([Val1, Val2 | ObjVals]).
+
+dec_subidentifiers(<<>>, _Av, Al) ->
+    lists:reverse(Al);
+dec_subidentifiers(<<1:1,H:7,T/binary>>, Av, Al) ->
+    dec_subidentifiers(T, Av bsl 7 + H, Al);
+dec_subidentifiers(<<H,T/binary>>, Av, Al) ->
+    dec_subidentifiers(T, 0, [Av bsl 7 + H | Al]).
+
+encode_tags(TagIn, {BytesSoFar, LenSoFar}) ->
+    encode_tags(TagIn, BytesSoFar, LenSoFar).
+
+encode_tags([Tag | Trest], BytesSoFar, LenSoFar) ->
+    {Bytes2, L2} = encode_length(LenSoFar),
+    encode_tags(Trest,
+                [Tag, Bytes2 | BytesSoFar],
+                LenSoFar + byte_size(Tag) + L2);
+encode_tags([], BytesSoFar, _LenSoFar) ->
+    BytesSoFar.
+
+encode_length(L) when L =< 127 ->
+    {[L], 1};
+encode_length(L) ->
+    Oct = minimum_octets(L),
+    Len = length(Oct),
+    if
+        Len =< 126 ->
+            {[128 bor Len | Oct], Len + 1};
+        true ->
+            exit({error, {asn1, too_long_length_oct, Len}})
+    end.
+
+minimum_octets(0, Acc) ->
+    Acc;
+minimum_octets(Val, Acc) ->
+    minimum_octets(Val bsr 8, [Val band 255 | Acc]).
+
+minimum_octets(Val) ->
+    minimum_octets(Val, []).
+
+match_tags({T, V}, [T]) ->
+    V;
+match_tags({T, V}, [T | Tt]) ->
+    match_tags(V, Tt);
+match_tags([{T, V}], [T | Tt]) ->
+    match_tags(V, Tt);
+match_tags([{T, _V} | _] = Vlist, [T]) ->
+    Vlist;
+match_tags(Tlv, []) ->
+    Tlv;
+match_tags({Tag, _V} = Tlv, [T | _Tt]) ->
+    exit({error, {asn1, {wrong_tag, {{expected, T}, {got, Tag, Tlv}}}}}).
+
+match_and_collect(Tlv, TagsIn) ->
+    Val = match_tags(Tlv, TagsIn),
+    case Val of
+        [_ | _] = PartList ->
+            collect_parts(PartList);
+        Bin when is_binary(Bin) ->
+            Bin
+    end.
+
+collect_parts([{_, Part} | Rest]) ->
+    collect_parts(Rest, [Part]);
+collect_parts([]) ->
+    <<>>;
+collect_parts(Bin) when is_binary(Bin) ->
+    Bin.
+
+collect_parts([{_, Part} | Rest], Acc) ->
+    collect_parts(Rest, [Part | Acc]);
+collect_parts([], Acc) ->
+    list_to_binary(lists:reverse(Acc));
+collect_parts(Bin, Acc) when is_binary(Bin) ->
+    list_to_binary(lists:reverse([Bin | Acc])).
