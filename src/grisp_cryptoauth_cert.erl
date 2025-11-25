@@ -238,9 +238,9 @@ distinguished_name(Map) when is_map(Map) ->
 %% HELPER
 %%%%%%%%%%%%%%
 
-
-%% Manual DER encoding/decoding for ASN.1 types
-%% Functions extracted from OTP-PUB-KEY module to avoid dependency
+%% There's no way to DER encode standard types using
+%% standard modules.
+%% We have to use functions taken from plublic_key and asn1 internal modules.
 
 %% CRLNumber is derived from Integer
 der_encode_Integer(Int) ->
