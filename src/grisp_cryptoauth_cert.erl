@@ -242,15 +242,13 @@ distinguished_name(Map) when is_map(Map) ->
 %% Manual DER encoding/decoding for ASN.1 types
 %% Functions extracted from OTP-PUB-KEY module to avoid dependency
 
-%% CertificateSerialNumber is derived from Integer
+%% CRLNumber is derived from Integer
 der_encode_Integer(Int) ->
-    Bytes = iolist_to_binary(enc_CertificateSerialNumber(Int)),
-    <<T:8, _L:8, V/binary>> = Bytes,
+    <<T:8, _L:8, V/binary>> = public_key:der_encode('CRLNumber', Int),
     {T, V}.
 
 der_decode_Integer(DER) ->
-    {Tlv, _} = asn1rt_nif:decode_ber_tlv(<<2, (byte_size(DER)):8, DER/binary>>),
-    dec_CertificateSerialNumber(Tlv).
+    public_key:der_decode('CRLNumber', DER).
 
 
 %% InvalidityDate is derived from GeneralizedTime
@@ -508,19 +506,6 @@ attribute_type(Type) -> Type.
 %% Functions extracted from OTP-PUB-KEY module
 %%%%%%%%%%%%%%
 
-%% CertificateSerialNumber encoding/decoding
-enc_CertificateSerialNumber(Val) ->
-    enc_CertificateSerialNumber(Val, [<<2>>]).
-
-enc_CertificateSerialNumber(Val, TagIn) ->
-    encode_integer(Val, TagIn).
-
-dec_CertificateSerialNumber(Tlv) ->
-    dec_CertificateSerialNumber(Tlv, [2]).
-
-dec_CertificateSerialNumber(Tlv, TagIn) ->
-    decode_integer(Tlv, TagIn).
-
 %% InvalidityDate encoding/decoding
 enc_InvalidityDate(Val) ->
     enc_InvalidityDate(Val, [<<24>>]).
@@ -567,37 +552,6 @@ dec_CertPolicyId(Tlv, TagIn) ->
     decode_object_identifier(Tlv, TagIn).
 
 %% Helper functions for ASN.1 encoding/decoding
-
-encode_integer(Val, Tag) when is_integer(Val) ->
-    encode_tags(Tag, encode_integer(Val));
-encode_integer(Val, _Tag) ->
-    exit({error, {asn1, {encode_integer, Val}}}).
-
-encode_integer(Val) ->
-    Bytes =
-        if
-            Val >= 0 ->
-                encode_integer_pos(Val, []);
-            true ->
-                encode_integer_neg(Val, [])
-        end,
-    {Bytes, length(Bytes)}.
-
-encode_integer_neg(-1, [B1 | _T] = L) when B1 > 127 ->
-    L;
-encode_integer_neg(N, Acc) ->
-    encode_integer_neg(N bsr 8, [N band 255 | Acc]).
-
-encode_integer_pos(0, [B | _Acc] = L) when B < 128 ->
-    L;
-encode_integer_pos(N, Acc) ->
-    encode_integer_pos(N bsr 8, [N band 255 | Acc]).
-
-decode_integer(Tlv, TagIn) ->
-    Bin = match_tags(Tlv, TagIn),
-    Len = byte_size(Bin),
-    <<Int:Len/signed-unit:8>> = Bin,
-    Int.
 
 encode_restricted_string(OctetList, TagIn) when is_binary(OctetList) ->
     encode_tags(TagIn, OctetList, byte_size(OctetList));
