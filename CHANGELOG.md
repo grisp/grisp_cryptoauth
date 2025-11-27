@@ -8,6 +8,12 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [2.5.0] - 2025-11-27
+
+### Added
+
+- `tls_options/1` API call to main module [(#12)](https://github.com/grisp/grisp_cryptoauth/pull/12)
+
 ## [2.4.2] - 2025-03-12
 
 ### Changed
@@ -53,7 +59,8 @@ be used in tests and in local shell.
 
 - Initial release
 
-[Unreleased]: https://github.com/grisp/grisp_cryptoauth/compare/2.4.2...HEAD
+[Unreleased]: https://github.com/grisp/grisp_cryptoauth/compare/2.5.0...HEAD
+[2.5.0]: https://github.com/grisp/grisp_cryptoauth/compare/2.4.2...2.5.0
 [2.4.2]: https://github.com/grisp/grisp_cryptoauth/compare/2.4.1...2.4.2
 [2.4.1]: https://github.com/grisp/grisp_cryptoauth/compare/2.4.0...2.4.1
 [2.4.0]: https://github.com/grisp/grisp_cryptoauth/compare/2.3.0...2.4.0
