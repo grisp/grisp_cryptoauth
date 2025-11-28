@@ -241,16 +241,24 @@ distinguished_name(Map) when is_map(Map) ->
 
 %% There's no way to DER encode standard types using
 %% standard modules, hence use undocumented 'OTP-PUB-KEY'
-%% and some hackery
+%% or 'OTP-PKIX' (Erlang 28 or younger) and some hackery
+
+pkix_module() ->
+    case code:ensure_loaded('OTP-PKIX') of
+        {module, 'OTP-PKIX'} ->
+            'OTP-PKIX';
+        _ ->
+            'OTP-PUB-KEY'
+    end.
 
 %% CertificateSerialNumber is derived from Integer
 der_encode_Integer(Int) ->
     <<T:8, _L:8, V/binary>> =
-        element(2, 'OTP-PUB-KEY':encode('CertificateSerialNumber', Int)),
+        element(2, (pkix_module()):encode('CertificateSerialNumber', Int)),
     {T, V}.
 
 der_decode_Integer(DER) ->
-    element(2, 'OTP-PUB-KEY':decode('CertificateSerialNumber',
+    element(2, (pkix_module()):decode('CertificateSerialNumber',
                                     <<2, (byte_size(DER)):8, DER/binary>>)).
 
 
@@ -260,12 +268,12 @@ der_encode_GeneralizedTime({{Year, Month, Day}, _}) ->
                                 {Int, Pad} <- [{Year, 4}, {Month, 2}, {Day, 2}]])
                                ++ [48,48,48,48,48,48,90],
     <<T:8, _L:8, V/binary>> =
-        element(2, 'OTP-PUB-KEY':encode('InvalidityDate', TimeString)),
+        element(2, (pkix_module()):encode('InvalidityDate', TimeString)),
     {T, V}.
 
 der_decode_GeneralizedTime(DER) ->
     [Y1,Y2,Y3,Y4,M1,M2,D1,D2,H1,H2,48,48,48,48,90] =
-        element(2, 'OTP-PUB-KEY':decode('InvalidityDate',
+        element(2, (pkix_module()):decode('InvalidityDate',
                                         <<24, (byte_size(DER)):8, DER/binary>>)),
     {{list_to_integer([Y1,Y2,Y3,Y4]),
       list_to_integer([M1,M2]),
@@ -276,22 +284,22 @@ der_decode_GeneralizedTime(DER) ->
 %% EmailAddress is derived from IA5String
 der_encode_IA5String(String) ->
     <<T:8, _L:8, V/binary>> =
-        element(2, 'OTP-PUB-KEY':encode('EmailAddress', String)),
+        element(2, (pkix_module()):encode('EmailAddress', String)),
     {T, V}.
 
 der_decode_IA5String(DER) ->
-    element(2, 'OTP-PUB-KEY':decode('EmailAddress',
+    element(2, (pkix_module()):decode('EmailAddress',
                                     <<22, (byte_size(DER)):8, DER/binary>>)).
 
 
 %% CertPolicyId is derived from ObjectIdentifier
 der_encode_ObjectIdentifier(Id) ->
     <<T:8, _L:8, V/binary>> =
-        element(2, 'OTP-PUB-KEY':encode('CertPolicyId', Id)),
+        element(2, (pkix_module()):encode('CertPolicyId', Id)),
     {T, V}.
 
 der_decode_ObjectIdentifier(DER) ->
-    element(2, 'OTP-PUB-KEY':decode('CertPolicyId',
+    element(2, (pkix_module()):decode('CertPolicyId',
                                     <<6, (byte_size(DER)):8, DER/binary>>)).
 
 
