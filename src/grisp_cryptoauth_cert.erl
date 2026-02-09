@@ -272,13 +272,13 @@ der_decode_GeneralizedTime(DER) ->
       list_to_integer([D1,D2])},
      {list_to_integer([H1,H2]), 0, 0}}.
 
-%% CPSuri is derived from IA5String
+%% OTPDisplayText can be used to encode a IA5String
 der_encode_IA5String(String) ->
-    {ok, Bytes} = 'OTP-PKIX':encode('CPSuri', String),
+    {ok, Bytes} = 'OTP-PKIX':encode('OTPDisplayText', {ia5String, String}),
     <<T:8, _L:8, V/binary>> = Bytes,
     {T, V}.
 der_decode_IA5String(DER) ->
-    {ok, String} = 'OTP-PKIX':decode('CPSuri', DER),
+    {ok, {ia5String, String}} = 'OTP-PKIX':decode('OTPDisplayText', DER),
     String.
 
 %% CertPolicyId is derived from ObjectIdentifier
