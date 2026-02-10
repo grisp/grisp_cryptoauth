@@ -8,6 +8,12 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [2.6.0] - 2025-02-10
+
+### Added
+
+- Support for OTP 28
+
 ## [2.5.0] - 2025-11-27
 
 ### Added
@@ -59,7 +65,8 @@ be used in tests and in local shell.
 
 - Initial release
 
-[Unreleased]: https://github.com/grisp/grisp_cryptoauth/compare/2.5.0...HEAD
+[Unreleased]: https://github.com/grisp/grisp_cryptoauth/compare/2.6.0...HEAD
+[2.6.0]: https://github.com/grisp/grisp_cryptoauth/compare/2.5.0...2.6.0
 [2.5.0]: https://github.com/grisp/grisp_cryptoauth/compare/2.4.2...2.5.0
 [2.4.2]: https://github.com/grisp/grisp_cryptoauth/compare/2.4.1...2.4.2
 [2.4.1]: https://github.com/grisp/grisp_cryptoauth/compare/2.4.0...2.4.1
