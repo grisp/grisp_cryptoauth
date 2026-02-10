@@ -238,6 +238,61 @@ distinguished_name(Map) when is_map(Map) ->
 %% HELPER
 %%%%%%%%%%%%%%
 
+%% There's no way to DER encode standard types using
+%% standard modules.
+%% We have to use alternative types available in public_key,
+%% or the internal module 'OTP-PKIX'.
+
+-if(?OTP_RELEASE >= 28).
+
+%% CRLNumber is derived from Integer
+der_encode_Integer(Int) ->
+    <<T:8, _L:8, V/binary>> = public_key:der_encode('CRLNumber', Int),
+    {T, V}.
+
+der_decode_Integer(DER) ->
+    public_key:der_decode('CRLNumber', DER).
+
+%% InvalidityDate is derived from GeneralizedTime
+der_encode_GeneralizedTime({{Year, Month, Day}, _}) ->
+    TimeString = lists:flatten([string:right(integer_to_list(Int), Pad, $0) ||
+                                {Int, Pad} <- [{Year, 4}, {Month, 2}, {Day, 2}]])
+                               ++ [48,48,48,48,48,48,90],
+    <<T:8, _L:8, V/binary>> = public_key:der_encode('InvalidityDate', TimeString),
+    {T, V}.
+
+der_decode_GeneralizedTime(DER) ->
+    [Y1,Y2,Y3,Y4,
+     M1,M2,
+     D1,D2,
+     H1,H2,
+     48,48,48,48,90] = public_key:der_decode('InvalidityDate', DER),
+    {{list_to_integer([Y1,Y2,Y3,Y4]),
+      list_to_integer([M1,M2]),
+      list_to_integer([D1,D2])},
+     {list_to_integer([H1,H2]), 0, 0}}.
+
+%% OTPDisplayText can be used to encode a IA5String
+der_encode_IA5String(String) ->
+    {ok, Bytes} = 'OTP-PKIX':encode('OTPDisplayText', {ia5String, String}),
+    <<T:8, _L:8, V/binary>> = Bytes,
+    {T, V}.
+der_decode_IA5String(DER) ->
+    {ok, {ia5String, String}} = 'OTP-PKIX':decode('OTPDisplayText', DER),
+    String.
+
+%% CertPolicyId is derived from ObjectIdentifier
+der_encode_ObjectIdentifier(OId) ->
+    {ok, Bytes} = 'OTP-PKIX':encode('CertPolicyId', OId),
+    <<T:8, _L:8, V/binary>> = Bytes,
+    {T, V}.
+
+der_decode_ObjectIdentifier(DER) ->
+    {ok, OId} = 'OTP-PKIX':decode('CertPolicyId', DER),
+    OId.
+
+-else.
+%% Keeping backward compatibility with OTP 27 and earlier versions
 
 %% There's no way to DER encode standard types using
 %% standard modules, hence use undocumented 'OTP-PUB-KEY'
@@ -294,6 +349,7 @@ der_decode_ObjectIdentifier(DER) ->
     element(2, 'OTP-PUB-KEY':decode('CertPolicyId',
                                     <<6, (byte_size(DER)):8, DER/binary>>)).
 
+-endif.
 
 ext_authKeyId(#'OTPCertificate'{tbsCertificate = TBS}) ->
     SerialNumber = TBS#'OTPTBSCertificate'.serialNumber,
@@ -354,7 +410,7 @@ calc_expire_years(#'Validity'{notBefore = NotBefore, notAfter = NotAfter}) ->
     {Days, Hours} = calendar:time_difference(TS1, TS2),
     ExpireYears = Days div 365,
     case {ExpireYears < 32, Days rem 365, Hours} of
-        {true, 0, {0, 0, 0}} -> 
+        {true, 0, {0, 0, 0}} ->
             ExpireYears;
         {C1, C2, C3} ->
             throw({error, {validity_broken, {C1, C2, C3}}})
